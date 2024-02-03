@@ -1,9 +1,12 @@
+#include "map.h"
 #include "renderer.h"
+#include "util.h"
 #include "vector.h"
 #include "wad.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define WIDTH  1200
 #define HEIGHT 675
@@ -32,13 +35,24 @@ int main(int argc, char **argv) {
     return 2;
   }
 
-  printf("Loaded a WAD file of type %s with %u lumps and directory at %u\n",
-         wad.id, wad.num_lumps, wad.directory_offset);
+  map_t map;
+  if (wad_read_map("E1M1", &map, &wad) != 0) {
+    printf("Failed to read map (E1M1) from WAD file\n");
+    return 3;
+  }
 
-  printf("Lumps:\n");
-  for (int i = 0; i < wad.num_lumps; i++) {
-    printf("%8s:\t%u\t%u\n", wad.lumps[i].name, wad.lumps[i].offset,
-           wad.lumps[i].size);
+  vec2_t  out_min = {20.f, 20.f}, out_max = {WIDTH - 20.f, HEIGHT - 20.f};
+  vec2_t *remapped_vertices = malloc(sizeof(vec2_t) * map.num_vertices);
+  for (size_t i = 0; i < map.num_vertices; i++) {
+    remapped_vertices[i] = (vec2_t){
+        .x = (max(map.min.x, min(map.vertices[i].x, map.max.x)) - map.min.x) *
+                 (out_max.x - out_min.x) / (map.max.x - map.min.x) +
+             out_min.x,
+        .y = HEIGHT -
+             (max(map.min.y, min(map.vertices[i].y, map.max.y)) - map.min.y) *
+                 (out_max.y - out_min.y) / (map.max.y - map.min.y) -
+             out_min.y,
+    };
   }
 
   renderer_init(WIDTH, HEIGHT);
@@ -58,15 +72,10 @@ int main(int argc, char **argv) {
     glfwSetWindowTitle(window, title);
 
     renderer_clear();
-    renderer_draw_line((vec2_t){0.f, 0.f}, (vec2_t){WIDTH, HEIGHT}, 5.f,
-                       (vec4_t){0.f, 0.f, 1.f, 1.f});
-    renderer_draw_line((vec2_t){WIDTH, 0.f}, (vec2_t){0.f, HEIGHT}, 5.f,
-                       (vec4_t){0.f, 0.f, 1.f, 1.f});
-
-    renderer_draw_point((vec2_t){100.f, 100.f}, 2.f,
-                        (vec4_t){1.f, 1.f, 1.f, 1.f});
-    renderer_draw_quad((vec2_t){900.f, 100.f}, (vec2_t){50.f, 50.f}, angle,
-                       (vec4_t){1.f, 1.f, 0.f, 1.f});
+    for (size_t i = 0; i < map.num_vertices; i++) {
+      renderer_draw_point(remapped_vertices[i], 3.f,
+                          (vec4_t){1.f, 1.f, 0.f, 1.f});
+    }
     glfwSwapBuffers(window);
   }
 
