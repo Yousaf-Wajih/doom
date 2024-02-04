@@ -1,4 +1,5 @@
 #include "wad.h"
+#include "map.h"
 #include "vector.h"
 
 #include <math.h>
@@ -77,8 +78,8 @@ int wad_find_lump(const char *lumpname, const wad_t *wad) {
 }
 
 #define THINGS_IDX   1
-#define SIDEDEFS_IDX 2
-#define LINEDEFS_IDX 3
+#define LINEDEFS_IDX 2
+#define SIDEDEFS_IDX 3
 #define VERTEXES_IDX 4
 #define SEGS_IDX     5
 #define SSECTORS_IDX 6
@@ -86,12 +87,14 @@ int wad_find_lump(const char *lumpname, const wad_t *wad) {
 #define SECTORS_IDX  8
 
 static void read_vertices(map_t *map, const lump_t *lump);
+static void read_linedefs(map_t *map, const lump_t *lump);
 
 int wad_read_map(const char *mapname, map_t *map, const wad_t *wad) {
   int map_index = wad_find_lump(mapname, wad);
   if (map_index < 0) { return 1; }
 
   read_vertices(map, &wad->lumps[map_index + VERTEXES_IDX]);
+  read_linedefs(map, &wad->lumps[map_index + LINEDEFS_IDX]);
 
   return 0;
 }
@@ -111,5 +114,16 @@ void read_vertices(map_t *map, const lump_t *lump) {
     if (map->vertices[j].y < map->min.y) { map->min.y = map->vertices[j].y; }
     if (map->vertices[j].x > map->max.x) { map->max.x = map->vertices[j].x; }
     if (map->vertices[j].y > map->max.y) { map->max.y = map->vertices[j].y; }
+  }
+}
+
+void read_linedefs(map_t *map, const lump_t *lump) {
+  map->num_linedefs = lump->size / 14; // each linedef is 14 bytes
+  map->linedefs     = malloc(sizeof(linedef_t) * map->num_linedefs);
+
+  for (int i = 0, j = 0; i < lump->size; i += 14, j++) {
+    map->linedefs[j].start_idx = READ_I16(lump->data, i);
+    map->linedefs[j].end_idx   = READ_I16(lump->data, i + 2);
+    map->linedefs[j].flags     = READ_I16(lump->data, i + 4);
   }
 }

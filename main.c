@@ -72,10 +72,24 @@ int main(int argc, char **argv) {
     glfwSetWindowTitle(window, title);
 
     renderer_clear();
+
+    for (size_t i = 0; i < map.num_linedefs; i++) {
+      linedef_t *linedef = &map.linedefs[i];
+
+      vec4_t color = {1.f, 1.f, 1.f, 1.f};
+      if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
+        color = (vec4_t){.3f, .3f, .3f, 1.f};
+      }
+
+      renderer_draw_line(remapped_vertices[linedef->start_idx],
+                         remapped_vertices[linedef->end_idx], 1.f, color);
+    }
+
     for (size_t i = 0; i < map.num_vertices; i++) {
       renderer_draw_point(remapped_vertices[i], 3.f,
                           (vec4_t){1.f, 1.f, 0.f, 1.f});
     }
+
     glfwSwapBuffers(window);
   }
 
