@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "gl_helpers.h"
 #include "matrix.h"
+#include "mesh.h"
 #include "vector.h"
 
 #include <GL/glew.h>
@@ -15,9 +16,10 @@ const char *vertSrc =
     "#version 330 core\n"
     "layout(location = 0) in vec2 pos;\n"
     "uniform mat4 model;\n"
+    "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "void main() {\n"
-    "  gl_Position = projection * model * vec4(pos, 0.0, 1.0);\n"
+    "  gl_Position = projection * view * model * vec4(pos, 0.0, 1.0);\n"
     "}\n";
 
 const char *fragSrc =
@@ -28,9 +30,10 @@ const char *fragSrc =
     "  fragColor = color;\n"
     "}\n";
 
+static mesh_t quad_mesh;
 static float  width, height;
 static GLuint program;
-static GLuint model_location, color_location;
+static GLuint model_location, view_location, color_location;
 
 void renderer_init(int w, int h) {
   width  = w;
@@ -44,14 +47,26 @@ void renderer_init(int w, int h) {
 
 void renderer_clear() { glClear(GL_COLOR_BUFFER_BIT); }
 
+void renderer_set_view(mat4_t view) {
+  glUniformMatrix4fv(view_location, 1, GL_FALSE, view.v);
+}
+
+void renderer_draw_mesh(const mesh_t *mesh, mat4_t transformation,
+                        vec4_t color) {
+  glUniform4fv(color_location, 1, color.v);
+  glUniformMatrix4fv(model_location, 1, GL_FALSE, transformation.v);
+
+  glBindVertexArray(mesh->vao);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
+  glDrawElements(GL_TRIANGLES, mesh->num_indices, GL_UNSIGNED_INT, NULL);
+}
+
 void renderer_draw_point(vec2_t point, float size, vec4_t color) {
   mat4_t translation = mat4_translate((vec3_t){point.x, point.y, 0.f});
   mat4_t scale       = mat4_scale((vec3_t){size, size, 1.f});
   mat4_t model       = mat4_mul(scale, translation);
 
-  glUniform4fv(color_location, 1, color.v);
-  glUniformMatrix4fv(model_location, 1, GL_FALSE, model.v);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+  renderer_draw_mesh(&quad_mesh, model, color);
 }
 
 void renderer_draw_line(vec2_t p0, vec2_t p1, float width, vec4_t color) {
@@ -64,9 +79,7 @@ void renderer_draw_line(vec2_t p0, vec2_t p1, float width, vec4_t color) {
   mat4_t rotation = mat4_rotate((vec3_t){0.f, 0.f, 1.f}, angle);
   mat4_t model    = mat4_mul(mat4_mul(scale, rotation), translation);
 
-  glUniform4fv(color_location, 1, color.v);
-  glUniformMatrix4fv(model_location, 1, GL_FALSE, model.v);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+  renderer_draw_mesh(&quad_mesh, model, color);
 }
 
 void renderer_draw_quad(vec2_t center, vec2_t size, float angle, vec4_t color) {
@@ -75,9 +88,7 @@ void renderer_draw_quad(vec2_t center, vec2_t size, float angle, vec4_t color) {
   mat4_t rotation    = mat4_rotate((vec3_t){0.f, 0.f, 1.f}, angle);
   mat4_t model       = mat4_mul(mat4_mul(scale, rotation), translation);
 
-  glUniform4fv(color_location, 1, color.v);
-  glUniformMatrix4fv(model_location, 1, GL_FALSE, model.v);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+  renderer_draw_mesh(&quad_mesh, model, color);
 }
 
 static void init_shader() {
@@ -88,15 +99,16 @@ static void init_shader() {
   glUseProgram(program);
 
   model_location = glGetUniformLocation(program, "model");
+  view_location  = glGetUniformLocation(program, "view");
   color_location = glGetUniformLocation(program, "color");
 }
 
 static void init_quad() {
-  float vertices[] = {
-      .5f,  .5f,  // top-right
-      .5f,  -.5f, // bottom-right
-      -.5f, -.5f, // bottom-left
-      -.5f, .5f,  // top-left
+  vertex_t vertices[] = {
+      {.position = {.5f, .5f, 0.f}},   // top-right
+      {.position = {.5f, -.5f, 0.f}},  // bottom-right
+      {.position = {-.5f, -.5f, 0.f}}, // bottom-left
+      {.position = {-.5f, .5f, 0.f}},  // top-left
   };
 
   uint32_t indices[] = {
@@ -104,28 +116,12 @@ static void init_quad() {
       1, 2, 3, // 2nd triangle
   };
 
-  GLuint vao, vbo, ebo;
-  glGenVertexArrays(1, &vao);
-  glGenBuffers(1, &vbo);
-  glGenBuffers(1, &ebo);
-
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-               GL_STATIC_DRAW);
-
-  // unbind vbo; vao & ebo remain bound
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  mesh_create(&quad_mesh, 4, vertices, 6, indices);
 }
 
 void init_projection() {
   mat4_t projection          = mat4_ortho(0.f, width, height, 0.f, -1.f, 1.f);
   GLuint projection_location = glGetUniformLocation(program, "projection");
   glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection.v);
+  glUniformMatrix4fv(view_location, 1, GL_FALSE, mat4_identity().v);
 }
