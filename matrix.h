@@ -21,6 +21,8 @@ mat4_t mat4_translate(vec3_t translation);
 mat4_t mat4_scale(vec3_t scale);
 mat4_t mat4_rotate(vec3_t axis, float angle);
 
+mat4_t mat4_look_at(vec3_t eye, vec3_t target, vec3_t up);
+mat4_t mat4_perspective(float fov, float aspect, float near, float far);
 mat4_t mat4_ortho(float left, float right, float bottom, float top, float near,
                   float far);
 

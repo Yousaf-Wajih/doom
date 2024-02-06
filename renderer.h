@@ -7,7 +7,10 @@
 
 void renderer_init(int width, int height);
 void renderer_clear();
+void renderer_set_projection(mat4_t projection);
 void renderer_set_view(mat4_t view);
+
+vec2_t renderer_get_size();
 
 void renderer_draw_mesh(const mesh_t *mesh, mat4_t transformation,
                         vec4_t color);

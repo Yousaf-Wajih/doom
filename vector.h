@@ -28,7 +28,14 @@ typedef union vec4 {
   float v[4];
 } vec4_t;
 
+vec3_t vec3_add(vec3_t a, vec3_t b);
+vec3_t vec3_sub(vec3_t a, vec3_t b);
+vec3_t vec3_scale(vec3_t v, float s);
+
 float  vec3_length(vec3_t v);
 vec3_t vec3_normalize(vec3_t v);
+
+float  vec3_dot(vec3_t a, vec3_t b);
+vec3_t vec3_cross(vec3_t a, vec3_t b);
 
 #endif // !_VECTOR_H

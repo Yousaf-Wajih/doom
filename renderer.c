@@ -33,7 +33,8 @@ const char *fragSrc =
 static mesh_t quad_mesh;
 static float  width, height;
 static GLuint program;
-static GLuint model_location, view_location, color_location;
+static GLuint model_location, view_location, projection_location;
+static GLuint color_location;
 
 void renderer_init(int w, int h) {
   width  = w;
@@ -50,6 +51,12 @@ void renderer_clear() { glClear(GL_COLOR_BUFFER_BIT); }
 void renderer_set_view(mat4_t view) {
   glUniformMatrix4fv(view_location, 1, GL_FALSE, view.v);
 }
+
+void renderer_set_projection(mat4_t projection) {
+  glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection.v);
+}
+
+vec2_t renderer_get_size() { return (vec2_t){width, height}; }
 
 void renderer_draw_mesh(const mesh_t *mesh, mat4_t transformation,
                         vec4_t color) {
@@ -98,9 +105,10 @@ static void init_shader() {
 
   glUseProgram(program);
 
-  model_location = glGetUniformLocation(program, "model");
-  view_location  = glGetUniformLocation(program, "view");
-  color_location = glGetUniformLocation(program, "color");
+  projection_location = glGetUniformLocation(program, "projection");
+  model_location      = glGetUniformLocation(program, "model");
+  view_location       = glGetUniformLocation(program, "view");
+  color_location      = glGetUniformLocation(program, "color");
 }
 
 static void init_quad() {

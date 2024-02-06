@@ -1,3 +1,4 @@
+#include "engine.h"
 #include "map.h"
 #include "renderer.h"
 #include "util.h"
@@ -35,61 +36,24 @@ int main(int argc, char **argv) {
     return 2;
   }
 
-  map_t map;
-  if (wad_read_map("E1M1", &map, &wad) != 0) {
-    printf("Failed to read map (E1M1) from WAD file\n");
-    return 3;
-  }
-
-  vec2_t  out_min = {20.f, 20.f}, out_max = {WIDTH - 20.f, HEIGHT - 20.f};
-  vec2_t *remapped_vertices = malloc(sizeof(vec2_t) * map.num_vertices);
-  for (size_t i = 0; i < map.num_vertices; i++) {
-    remapped_vertices[i] = (vec2_t){
-        .x = (max(map.min.x, min(map.vertices[i].x, map.max.x)) - map.min.x) *
-                 (out_max.x - out_min.x) / (map.max.x - map.min.x) +
-             out_min.x,
-        .y = HEIGHT -
-             (max(map.min.y, min(map.vertices[i].y, map.max.y)) - map.min.y) *
-                 (out_max.y - out_min.y) / (map.max.y - map.min.y) -
-             out_min.y,
-    };
-  }
-
   renderer_init(WIDTH, HEIGHT);
+  engine_init(&wad, "E1M1");
 
   char  title[128];
-  float angle = 0.f;
-  float last  = 0.f;
+  float last = 0.f;
   while (!glfwWindowShouldClose(window)) {
     float now   = glfwGetTime();
     float delta = now - last;
     last        = now;
 
-    angle += .7f * delta;
+    engine_update(delta);
 
     glfwPollEvents();
     snprintf(title, 128, "DooM | %.0f", 1.f / delta);
     glfwSetWindowTitle(window, title);
 
     renderer_clear();
-
-    for (size_t i = 0; i < map.num_linedefs; i++) {
-      linedef_t *linedef = &map.linedefs[i];
-
-      vec4_t color = {1.f, 1.f, 1.f, 1.f};
-      if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
-        color = (vec4_t){.3f, .3f, .3f, 1.f};
-      }
-
-      renderer_draw_line(remapped_vertices[linedef->start_idx],
-                         remapped_vertices[linedef->end_idx], 1.f, color);
-    }
-
-    for (size_t i = 0; i < map.num_vertices; i++) {
-      renderer_draw_point(remapped_vertices[i], 3.f,
-                          (vec4_t){1.f, 1.f, 0.f, 1.f});
-    }
-
+    engine_render();
     glfwSwapBuffers(window);
   }
 
