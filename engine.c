@@ -1,17 +1,22 @@
 #include "engine.h"
 #include "camera.h"
+#include "input.h"
 #include "matrix.h"
 #include "mesh.h"
 #include "renderer.h"
+#include "util.h"
 #include "vector.h"
 #include "wad.h"
 
 #include <math.h>
 #include <stdio.h>
 
-#define FOV (M_PI / 3.f)
+#define FOV               (M_PI / 3.f)
+#define PLAYER_SPEED      (5.f)
+#define MOUSE_SENSITIVITY (.05f)
 
 static camera_t camera;
+static vec2_t   last_mouse;
 static mesh_t   quad_mesh;
 
 void engine_init(wad_t *wad, const char *mapname) {
@@ -46,7 +51,48 @@ void engine_init(wad_t *wad, const char *mapname) {
   mesh_create(&quad_mesh, 4, vertices, 6, indices);
 }
 
-void engine_update(float dt) { camera_update_direction_vectors(&camera); }
+void engine_update(float dt) {
+  camera_update_direction_vectors(&camera);
+
+  float speed =
+      (is_button_pressed(KEY_LSHIFT) ? PLAYER_SPEED * 2.f : PLAYER_SPEED) * dt;
+
+  if (is_button_pressed(KEY_W)) {
+    camera.position =
+        vec3_add(camera.position, vec3_scale(camera.forward, speed));
+  }
+  if (is_button_pressed(KEY_S)) {
+    camera.position =
+        vec3_add(camera.position, vec3_scale(camera.forward, -speed));
+  }
+  if (is_button_pressed(KEY_A)) {
+    camera.position =
+        vec3_add(camera.position, vec3_scale(camera.right, speed));
+  }
+  if (is_button_pressed(KEY_D)) {
+    camera.position =
+        vec3_add(camera.position, vec3_scale(camera.right, -speed));
+  }
+
+  if (is_button_pressed(MOUSE_RIGHT)) {
+    if (!is_mouse_captured()) {
+      last_mouse = get_mouse_position();
+      set_mouse_captured(1);
+    }
+
+    vec2_t current_mouse = get_mouse_position();
+    float  dx            = last_mouse.x - current_mouse.x;
+    float  dy            = last_mouse.y - current_mouse.y;
+    last_mouse           = current_mouse;
+
+    camera.yaw += dx * MOUSE_SENSITIVITY * dt;
+    camera.pitch += dy * MOUSE_SENSITIVITY * dt;
+
+    camera.pitch = max(-M_PI_2 + 0.05, min(M_PI_2 - 0.05, camera.pitch));
+  } else if (is_mouse_captured()) {
+    set_mouse_captured(0);
+  }
+}
 
 void engine_render() {
   mat4_t view = mat4_look_at(

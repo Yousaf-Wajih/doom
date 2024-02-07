@@ -1,8 +1,6 @@
 #include "engine.h"
-#include "map.h"
+#include "input.h"
 #include "renderer.h"
-#include "util.h"
-#include "vector.h"
 #include "wad.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -29,6 +27,11 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Failed to initalize GLEW\n");
     return 1;
   }
+
+  input_init(window);
+  glfwSetKeyCallback(window, input_key_callback);
+  glfwSetMouseButtonCallback(window, input_mouse_button_callback);
+  glfwSetCursorPosCallback(window, input_mouse_position_callback);
 
   wad_t wad;
   if (wad_load_from_file("doom1.wad", &wad) != 0) {
