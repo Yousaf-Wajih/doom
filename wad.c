@@ -88,6 +88,8 @@ int wad_find_lump(const char *lumpname, const wad_t *wad) {
 
 static void read_vertices(map_t *map, const lump_t *lump);
 static void read_linedefs(map_t *map, const lump_t *lump);
+static void read_sidedefs(map_t *map, const lump_t *lump);
+static void read_sectors(map_t *map, const lump_t *lump);
 
 int wad_read_map(const char *mapname, map_t *map, const wad_t *wad) {
   int map_index = wad_find_lump(mapname, wad);
@@ -95,6 +97,8 @@ int wad_read_map(const char *mapname, map_t *map, const wad_t *wad) {
 
   read_vertices(map, &wad->lumps[map_index + VERTEXES_IDX]);
   read_linedefs(map, &wad->lumps[map_index + LINEDEFS_IDX]);
+  read_sidedefs(map, &wad->lumps[map_index + SIDEDEFS_IDX]);
+  read_sectors(map, &wad->lumps[map_index + SECTORS_IDX]);
 
   return 0;
 }
@@ -122,8 +126,29 @@ void read_linedefs(map_t *map, const lump_t *lump) {
   map->linedefs     = malloc(sizeof(linedef_t) * map->num_linedefs);
 
   for (int i = 0, j = 0; i < lump->size; i += 14, j++) {
-    map->linedefs[j].start_idx = READ_I16(lump->data, i);
-    map->linedefs[j].end_idx   = READ_I16(lump->data, i + 2);
-    map->linedefs[j].flags     = READ_I16(lump->data, i + 4);
+    map->linedefs[j].start_idx     = READ_I16(lump->data, i);
+    map->linedefs[j].end_idx       = READ_I16(lump->data, i + 2);
+    map->linedefs[j].flags         = READ_I16(lump->data, i + 4);
+    map->linedefs[j].front_sidedef = READ_I16(lump->data, i + 10);
+    map->linedefs[j].back_sidedef  = READ_I16(lump->data, i + 12);
+  }
+}
+
+void read_sidedefs(map_t *map, const lump_t *lump) {
+  map->num_sidedefs = lump->size / 30; // each sidedef is 30 bytes
+  map->sidedefs     = malloc(sizeof(sidedef_t) * map->num_sidedefs);
+
+  for (int i = 0, j = 0; i < lump->size; i += 30, j++) {
+    map->sidedefs[j].sector_idx = READ_I16(lump->data, i + 28);
+  }
+}
+
+void read_sectors(map_t *map, const lump_t *lump) {
+  map->num_sectors = lump->size / 26; // each sector is 26 bytes
+  map->sectors     = malloc(sizeof(sector_t) * map->num_sectors);
+
+  for (int i = 0, j = 0; i < lump->size; i += 26, j++) {
+    map->sectors[j].floor   = (int16_t)READ_I16(lump->data, i);
+    map->sectors[j].ceiling = (int16_t)READ_I16(lump->data, i + 2);
   }
 }

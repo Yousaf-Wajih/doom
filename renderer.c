@@ -41,12 +41,14 @@ void renderer_init(int w, int h) {
   height = h;
 
   glClearColor(.2f, .2f, .2f, 1.f);
+  glEnable(GL_DEPTH_TEST);
+
   init_quad();
   init_shader();
   init_projection();
 }
 
-void renderer_clear() { glClear(GL_COLOR_BUFFER_BIT); }
+void renderer_clear() { glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
 
 void renderer_set_view(mat4_t view) {
   glUniformMatrix4fv(view_location, 1, GL_FALSE, view.v);
