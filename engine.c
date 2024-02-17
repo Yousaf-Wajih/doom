@@ -27,6 +27,7 @@ typedef struct wall_node {
 } wall_node_t, wall_list_t;
 
 static vec3_t get_random_color(const void *seed);
+static mat4_t model_from_vertices(vec3_t p0, vec3_t p1, vec3_t p2, vec3_t p3);
 
 static camera_t camera;
 static vec2_t   last_mouse;
@@ -70,7 +71,42 @@ void engine_init(wad_t *wad, const char *mapname) {
     linedef_t *linedef = &map.linedefs[i];
 
     if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
-      // TODO
+      wall_node_t *floor_node = malloc(sizeof(wall_node_t));
+      floor_node->next        = NULL;
+
+      vec2_t start = map.vertices[linedef->start_idx];
+      vec2_t end   = map.vertices[linedef->end_idx];
+
+      sidedef_t *front_sidedef = &map.sidedefs[linedef->front_sidedef];
+      sector_t  *front_sector  = &map.sectors[front_sidedef->sector_idx];
+
+      sidedef_t *back_sidedef = &map.sidedefs[linedef->back_sidedef];
+      sector_t  *back_sector  = &map.sectors[back_sidedef->sector_idx];
+
+      vec3_t floor0 = {start.x, front_sector->floor, start.y};
+      vec3_t floor1 = {end.x, front_sector->floor, end.y};
+      vec3_t floor2 = {end.x, back_sector->floor, end.y};
+      vec3_t floor3 = {start.x, back_sector->floor, start.y};
+
+      floor_node->model  = model_from_vertices(floor0, floor1, floor2, floor3);
+      floor_node->sector = front_sector;
+
+      *wall_node_ptr = floor_node;
+      wall_node_ptr  = &floor_node->next;
+
+      wall_node_t *ceil_node = malloc(sizeof(wall_node_t));
+      ceil_node->next        = NULL;
+
+      vec3_t ceil0 = {start.x, front_sector->ceiling, start.y};
+      vec3_t ceil1 = {end.x, front_sector->ceiling, end.y};
+      vec3_t ceil2 = {end.x, back_sector->ceiling, end.y};
+      vec3_t ceil3 = {start.x, back_sector->ceiling, start.y};
+
+      ceil_node->model  = model_from_vertices(ceil0, ceil1, ceil2, ceil3);
+      ceil_node->sector = front_sector;
+
+      *wall_node_ptr = ceil_node;
+      wall_node_ptr  = &ceil_node->next;
     } else {
       wall_node_t *node = malloc(sizeof(wall_node_t));
       node->next        = NULL;
@@ -78,26 +114,16 @@ void engine_init(wad_t *wad, const char *mapname) {
       vec2_t start = map.vertices[linedef->start_idx];
       vec2_t end   = map.vertices[linedef->end_idx];
 
-      sector_t *sector =
-          &map.sectors[map.sidedefs[linedef->front_sidedef].sector_idx];
+      sidedef_t *sidedef = &map.sidedefs[linedef->front_sidedef];
+      sector_t  *sector  = &map.sectors[sidedef->sector_idx];
 
-      float floor   = (float)sector->floor / SCALE;
-      float ceiling = (float)sector->ceiling / SCALE;
+      vec3_t p0 = {start.x, sector->floor, start.y};
+      vec3_t p1 = {end.x, sector->floor, end.y};
+      vec3_t p2 = {end.x, sector->ceiling, end.y};
+      vec3_t p3 = {start.x, sector->ceiling, start.y};
 
-      start.x /= SCALE;
-      start.y /= SCALE;
-      end.x /= SCALE;
-      end.y /= SCALE;
-
-      float x = end.x - start.x, y = end.y - start.y;
-      float length = sqrtf(x * x + y * y), height = ceiling - floor;
-      float angle = atan2f(y, x);
-
-      mat4_t translation = mat4_translate((vec3_t){start.x, floor, start.y});
-      mat4_t scale       = mat4_scale((vec3_t){length, height, 1.f});
-      mat4_t rotation    = mat4_rotate((vec3_t){0.f, 1.f, 0.f}, angle);
-      node->model        = mat4_mul(mat4_mul(scale, rotation), translation);
-      node->sector       = sector;
+      node->model  = model_from_vertices(p0, p1, p2, p3);
+      node->sector = sector;
 
       *wall_node_ptr = node;
       wall_node_ptr  = &node->next;
@@ -154,7 +180,8 @@ void engine_render() {
   renderer_set_view(view);
 
   for (wall_node_t *node = wall_list; node != NULL; node = node->next) {
-    vec3_t color = get_random_color(node->sector);
+    vec3_t color = vec3_scale(get_random_color(node->sector),
+                              node->sector->light_level / 255.f);
 
     renderer_draw_mesh(&quad_mesh, node->model,
                        (vec4_t){color.x, color.y, color.z, 1.f});
@@ -163,9 +190,25 @@ void engine_render() {
 
 vec3_t get_random_color(const void *seed) {
   srand((uintptr_t)seed);
-  return (vec3_t){
+  return vec3_normalize((vec3_t){
       (float)rand() / RAND_MAX,
       (float)rand() / RAND_MAX,
       (float)rand() / RAND_MAX,
-  };
+  });
+}
+
+mat4_t model_from_vertices(vec3_t p0, vec3_t p1, vec3_t p2, vec3_t p3) {
+  p0 = vec3_scale(p0, 1.f / SCALE);
+  p1 = vec3_scale(p1, 1.f / SCALE);
+  p2 = vec3_scale(p2, 1.f / SCALE);
+  p3 = vec3_scale(p3, 1.f / SCALE);
+
+  float x = p1.x - p0.x, y = p1.z - p0.z;
+  float length = sqrtf(x * x + y * y), height = p3.y - p0.y;
+  float angle = atan2f(y, x);
+
+  mat4_t translation = mat4_translate(p0);
+  mat4_t scale       = mat4_scale((vec3_t){length, height, 1.f});
+  mat4_t rotation    = mat4_rotate((vec3_t){0.f, 1.f, 0.f}, angle);
+  return mat4_mul(mat4_mul(scale, rotation), translation);
 }

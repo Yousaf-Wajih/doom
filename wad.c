@@ -148,7 +148,8 @@ void read_sectors(map_t *map, const lump_t *lump) {
   map->sectors     = malloc(sizeof(sector_t) * map->num_sectors);
 
   for (int i = 0, j = 0; i < lump->size; i += 26, j++) {
-    map->sectors[j].floor   = (int16_t)READ_I16(lump->data, i);
-    map->sectors[j].ceiling = (int16_t)READ_I16(lump->data, i + 2);
+    map->sectors[j].floor       = (int16_t)READ_I16(lump->data, i);
+    map->sectors[j].ceiling     = (int16_t)READ_I16(lump->data, i + 2);
+    map->sectors[j].light_level = (int16_t)READ_I16(lump->data, i + 20);
   }
 }
