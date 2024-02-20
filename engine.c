@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FOV               (M_PI / 3.f)
 #define PLAYER_SPEED      (5.f)
@@ -62,7 +63,21 @@ void engine_init(wad_t *wad, const char *mapname) {
 
   map_t map;
   if (wad_read_map(mapname, &map, wad) != 0) {
-    fprintf(stderr, "Failed to read map (E1M1) from WAD file\n");
+    fprintf(stderr, "Failed to read map (%s) from WAD file\n", mapname);
+    return;
+  }
+
+  char *gl_mapname = malloc(strlen(mapname) + 4);
+  gl_mapname[0]    = 'G';
+  gl_mapname[1]    = 'L';
+  gl_mapname[2]    = '_';
+  gl_mapname[3]    = 0;
+  strcat(gl_mapname, mapname);
+
+  gl_map_t gl_map;
+  if (wad_read_gl_map(gl_mapname, &gl_map, wad) != 0) {
+    fprintf(stderr, "Failed to read GL info for map (%s) from WAD file\n",
+            mapname);
     return;
   }
 

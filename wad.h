@@ -1,6 +1,7 @@
 #ifndef _WAD_H
 #define _WAD_H
 
+#include "gl_map.h"
 #include "map.h"
 #include <stdint.h>
 
@@ -22,5 +23,6 @@ void wad_free(wad_t *wad);
 
 int wad_find_lump(const char *lumpname, const wad_t *wad);
 int wad_read_map(const char *mapname, map_t *map, const wad_t *wad);
+int wad_read_gl_map(const char *gl_mapname, gl_map_t *map, const wad_t *wad);
 
 #endif // !_WAD_H

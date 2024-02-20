@@ -1,4 +1,5 @@
 #include "wad.h"
+#include "gl_map.h"
 #include "map.h"
 #include "vector.h"
 
@@ -151,5 +152,76 @@ void read_sectors(map_t *map, const lump_t *lump) {
     map->sectors[j].floor       = (int16_t)READ_I16(lump->data, i);
     map->sectors[j].ceiling     = (int16_t)READ_I16(lump->data, i + 2);
     map->sectors[j].light_level = (int16_t)READ_I16(lump->data, i + 20);
+  }
+}
+
+#define GL_VERTICES_IDX 1
+#define GL_SEGS_IDX     2
+#define GL_SSECTORS_IDX 3
+#define GL_NODES_IDX    4
+
+static void read_gl_vertices(gl_map_t *map, const lump_t *lump);
+static void read_gl_segments(gl_map_t *map, const lump_t *lump);
+static void read_gl_subsectors(gl_map_t *map, const lump_t *lump);
+
+int wad_read_gl_map(const char *gl_mapname, gl_map_t *map, const wad_t *wad) {
+  int map_index = wad_find_lump(gl_mapname, wad);
+  if (map_index < 0) { return 1; }
+
+  if (strncmp((const char *)wad->lumps[map_index + GL_VERTICES_IDX].data,
+              "gNd2", 4) != 0) {
+    return 2;
+  }
+
+  if (strncmp((const char *)wad->lumps[map_index + GL_SEGS_IDX].data, "gNd3",
+              4) == 0) {
+    return 2;
+  }
+
+  read_gl_vertices(map, &wad->lumps[map_index + GL_VERTICES_IDX]);
+  read_gl_segments(map, &wad->lumps[map_index + GL_SEGS_IDX]);
+  read_gl_subsectors(map, &wad->lumps[map_index + GL_SSECTORS_IDX]);
+
+  return 0;
+}
+
+void read_gl_vertices(gl_map_t *map, const lump_t *lump) {
+  map->num_vertices = (lump->size - 4) / 8; // each vertex is 4+4=8 bytes
+  map->vertices     = malloc(sizeof(vec2_t) * map->num_vertices);
+
+  map->min = (vec2_t){INFINITY, INFINITY};
+  map->max = (vec2_t){-INFINITY, -INFINITY};
+
+  for (int i = 4, j = 0; i < lump->size; i += 8, j++) {
+    map->vertices[j].x = (float)((int32_t)READ_I32(lump->data, i)) / (1 << 16);
+    map->vertices[j].y =
+        (float)((int32_t)READ_I32(lump->data, i + 4)) / (1 << 16);
+
+    if (map->vertices[j].x < map->min.x) { map->min.x = map->vertices[j].x; }
+    if (map->vertices[j].y < map->min.y) { map->min.y = map->vertices[j].y; }
+    if (map->vertices[j].x > map->max.x) { map->max.x = map->vertices[j].x; }
+    if (map->vertices[j].y > map->max.y) { map->max.y = map->vertices[j].y; }
+  }
+}
+
+void read_gl_segments(gl_map_t *map, const lump_t *lump) {
+  map->num_segments = lump->size / 10; // each segment is 10 bytes
+  map->segments     = malloc(sizeof(gl_segment_t) * map->num_segments);
+
+  for (int i = 0, j = 0; i < lump->size; i += 10, j++) {
+    map->segments[j].start_vertex = READ_I16(lump->data, i);
+    map->segments[j].end_vertex   = READ_I16(lump->data, i + 2);
+    map->segments[j].linedef      = READ_I16(lump->data, i + 4);
+    map->segments[j].side         = READ_I16(lump->data, i + 6);
+  }
+}
+
+void read_gl_subsectors(gl_map_t *map, const lump_t *lump) {
+  map->num_subsectors = lump->size / 4; // each subsector is 4 bytes
+  map->subsectors     = malloc(sizeof(gl_subsector_t) * map->num_subsectors);
+
+  for (int i = 0, j = 0; i < lump->size; i += 4, j++) {
+    map->subsectors[j].num_segs  = READ_I16(lump->data, i);
+    map->subsectors[j].first_seg = READ_I16(lump->data, i + 2);
   }
 }
