@@ -6,6 +6,8 @@
 
 #include "vector.h"
 
+#define VERT_IS_GL (1 << 15)
+
 typedef struct gl_subsector {
   uint16_t num_segs;
   uint16_t first_seg;
