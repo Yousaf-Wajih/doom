@@ -35,6 +35,8 @@ typedef struct flat_node {
   struct flat_node *next;
 } flat_node_t, flat_list_t;
 
+static void generate_meshes(const map_t *map, const gl_map_t *gl_map);
+
 static vec3_t get_random_color(const void *seed);
 static mat4_t model_from_vertices(vec3_t p0, vec3_t p1, vec3_t p2, vec3_t p3);
 
@@ -48,7 +50,7 @@ static flat_list_t *flat_list;
 void engine_init(wad_t *wad, const char *mapname) {
   camera = (camera_t){
       .position = {0.f, 0.f, 3.f},
-      .yaw      = -M_PI_2,
+      .yaw      = M_PI_2,
       .pitch    = 0.f,
   };
 
@@ -90,128 +92,7 @@ void engine_init(wad_t *wad, const char *mapname) {
     return;
   }
 
-  flat_node_t **flat_node_ptr = &flat_list;
-  for (int i = 0; i < gl_map.num_subsectors; i++) {
-    flat_node_t *node = malloc(sizeof(flat_node_t));
-    node->next        = NULL;
-    node->sector      = NULL;
-
-    gl_subsector_t *subsector  = &gl_map.subsectors[i];
-    size_t          n_vertices = subsector->num_segs;
-    vertex_t       *vertices   = malloc(sizeof(vertex_t) * n_vertices);
-
-    for (int j = 0; j < subsector->num_segs; j++) {
-      gl_segment_t *segment = &gl_map.segments[j + subsector->first_seg];
-
-      if (node->sector == NULL && segment->linedef != 0xffff) {
-        linedef_t *linedef = &map.linedefs[segment->linedef];
-        int        sector  = -1;
-        if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
-          if (segment->side == 0) {
-            sector = map.sidedefs[linedef->front_sidedef].sector_idx;
-          } else {
-            sector = map.sidedefs[linedef->back_sidedef].sector_idx;
-          }
-        } else {
-          sector = map.sidedefs[linedef->front_sidedef].sector_idx;
-        }
-
-        if (sector >= 0) { node->sector = &map.sectors[sector]; }
-      }
-
-      vec2_t v;
-      if (segment->start_vertex & VERT_IS_GL) {
-        v = gl_map.vertices[segment->start_vertex & 0x7fff];
-      } else {
-        v = map.vertices[segment->start_vertex];
-      }
-
-      vertices[j] = (vertex_t){
-          .position = {v.x / 100.f, 0.f, v.y / 100.f},
-      };
-    }
-
-    // Triangulation will form (n - 2) triangles, so 3*(n - 3) indices are
-    // required
-    size_t    n_indices = 3 * (n_vertices - 2);
-    uint32_t *indices   = malloc(sizeof(uint32_t) * n_indices);
-    for (int j = 0, k = 1; j < n_indices; j += 3, k++) {
-      indices[j]     = 0;
-      indices[j + 1] = k;
-      indices[j + 2] = k + 1;
-    }
-
-    mesh_create(&node->mesh, n_vertices, vertices, n_indices, indices);
-    free(vertices);
-    free(indices);
-
-    *flat_node_ptr = node;
-    flat_node_ptr  = &node->next;
-  }
-
-  wall_node_t **wall_node_ptr = &wall_list;
-  for (int i = 0; i < map.num_linedefs; i++) {
-    linedef_t *linedef = &map.linedefs[i];
-
-    if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
-      wall_node_t *floor_node = malloc(sizeof(wall_node_t));
-      floor_node->next        = NULL;
-
-      vec2_t start = map.vertices[linedef->start_idx];
-      vec2_t end   = map.vertices[linedef->end_idx];
-
-      sidedef_t *front_sidedef = &map.sidedefs[linedef->front_sidedef];
-      sector_t  *front_sector  = &map.sectors[front_sidedef->sector_idx];
-
-      sidedef_t *back_sidedef = &map.sidedefs[linedef->back_sidedef];
-      sector_t  *back_sector  = &map.sectors[back_sidedef->sector_idx];
-
-      vec3_t floor0 = {start.x, front_sector->floor, start.y};
-      vec3_t floor1 = {end.x, front_sector->floor, end.y};
-      vec3_t floor2 = {end.x, back_sector->floor, end.y};
-      vec3_t floor3 = {start.x, back_sector->floor, start.y};
-
-      floor_node->model  = model_from_vertices(floor0, floor1, floor2, floor3);
-      floor_node->sector = front_sector;
-
-      *wall_node_ptr = floor_node;
-      wall_node_ptr  = &floor_node->next;
-
-      wall_node_t *ceil_node = malloc(sizeof(wall_node_t));
-      ceil_node->next        = NULL;
-
-      vec3_t ceil0 = {start.x, front_sector->ceiling, start.y};
-      vec3_t ceil1 = {end.x, front_sector->ceiling, end.y};
-      vec3_t ceil2 = {end.x, back_sector->ceiling, end.y};
-      vec3_t ceil3 = {start.x, back_sector->ceiling, start.y};
-
-      ceil_node->model  = model_from_vertices(ceil0, ceil1, ceil2, ceil3);
-      ceil_node->sector = front_sector;
-
-      *wall_node_ptr = ceil_node;
-      wall_node_ptr  = &ceil_node->next;
-    } else {
-      wall_node_t *node = malloc(sizeof(wall_node_t));
-      node->next        = NULL;
-
-      vec2_t start = map.vertices[linedef->start_idx];
-      vec2_t end   = map.vertices[linedef->end_idx];
-
-      sidedef_t *sidedef = &map.sidedefs[linedef->front_sidedef];
-      sector_t  *sector  = &map.sectors[sidedef->sector_idx];
-
-      vec3_t p0 = {start.x, sector->floor, start.y};
-      vec3_t p1 = {end.x, sector->floor, end.y};
-      vec3_t p2 = {end.x, sector->ceiling, end.y};
-      vec3_t p3 = {start.x, sector->ceiling, start.y};
-
-      node->model  = model_from_vertices(p0, p1, p2, p3);
-      node->sector = sector;
-
-      *wall_node_ptr = node;
-      wall_node_ptr  = &node->next;
-    }
-  }
+  generate_meshes(&map, &gl_map);
 }
 
 void engine_update(float dt) {
@@ -283,6 +164,127 @@ void engine_render() {
         &node->mesh,
         mat4_translate((vec3_t){0.f, node->sector->ceiling / SCALE, 0.f}),
         (vec4_t){color.x, color.y, color.z, 1.f});
+  }
+}
+
+static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
+  flat_node_t **flat_node_ptr = &flat_list;
+  for (int i = 0; i < gl_map->num_subsectors; i++) {
+    flat_node_t *node = malloc(sizeof(flat_node_t));
+    node->next        = NULL;
+    node->sector      = NULL;
+
+    gl_subsector_t *subsector  = &gl_map->subsectors[i];
+    size_t          n_vertices = subsector->num_segs;
+    vertex_t       *vertices   = malloc(sizeof(vertex_t) * n_vertices);
+
+    for (int j = 0; j < subsector->num_segs; j++) {
+      gl_segment_t *segment = &gl_map->segments[j + subsector->first_seg];
+
+      if (node->sector == NULL && segment->linedef != 0xffff) {
+        linedef_t *linedef = &map->linedefs[segment->linedef];
+        int        sector  = -1;
+        if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED && segment->side == 1) {
+          sector = map->sidedefs[linedef->back_sidedef].sector_idx;
+        } else {
+          sector = map->sidedefs[linedef->front_sidedef].sector_idx;
+        }
+
+        if (sector >= 0) { node->sector = &map->sectors[sector]; }
+      }
+
+      vec2_t v;
+      if (segment->start_vertex & VERT_IS_GL) {
+        v = gl_map->vertices[segment->start_vertex & 0x7fff];
+      } else {
+        v = map->vertices[segment->start_vertex];
+      }
+
+      vertices[j] = (vertex_t){
+          .position = {v.x / SCALE, 0.f, -v.y / SCALE},
+      };
+    }
+
+    // Triangulation will form (n - 2) triangles, so 3*(n - 3) indices are
+    // required
+    size_t    n_indices = 3 * (n_vertices - 2);
+    uint32_t *indices   = malloc(sizeof(uint32_t) * n_indices);
+    for (int j = 0, k = 1; j < n_indices; j += 3, k++) {
+      indices[j]     = 0;
+      indices[j + 1] = k;
+      indices[j + 2] = k + 1;
+    }
+
+    mesh_create(&node->mesh, n_vertices, vertices, n_indices, indices);
+    free(vertices);
+    free(indices);
+
+    *flat_node_ptr = node;
+    flat_node_ptr  = &node->next;
+  }
+
+  wall_node_t **wall_node_ptr = &wall_list;
+  for (int i = 0; i < map->num_linedefs; i++) {
+    linedef_t *linedef = &map->linedefs[i];
+
+    if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
+      wall_node_t *floor_node = malloc(sizeof(wall_node_t));
+      floor_node->next        = NULL;
+
+      vec2_t start = map->vertices[linedef->start_idx];
+      vec2_t end   = map->vertices[linedef->end_idx];
+
+      sidedef_t *front_sidedef = &map->sidedefs[linedef->front_sidedef];
+      sector_t  *front_sector  = &map->sectors[front_sidedef->sector_idx];
+
+      sidedef_t *back_sidedef = &map->sidedefs[linedef->back_sidedef];
+      sector_t  *back_sector  = &map->sectors[back_sidedef->sector_idx];
+
+      vec3_t floor0 = {start.x, front_sector->floor, -start.y};
+      vec3_t floor1 = {end.x, front_sector->floor, -end.y};
+      vec3_t floor2 = {end.x, back_sector->floor, -end.y};
+      vec3_t floor3 = {start.x, back_sector->floor, -start.y};
+
+      floor_node->model  = model_from_vertices(floor0, floor1, floor2, floor3);
+      floor_node->sector = front_sector;
+
+      *wall_node_ptr = floor_node;
+      wall_node_ptr  = &floor_node->next;
+
+      wall_node_t *ceil_node = malloc(sizeof(wall_node_t));
+      ceil_node->next        = NULL;
+
+      vec3_t ceil0 = {start.x, front_sector->ceiling, -start.y};
+      vec3_t ceil1 = {end.x, front_sector->ceiling, -end.y};
+      vec3_t ceil2 = {end.x, back_sector->ceiling, -end.y};
+      vec3_t ceil3 = {start.x, back_sector->ceiling, -start.y};
+
+      ceil_node->model  = model_from_vertices(ceil0, ceil1, ceil2, ceil3);
+      ceil_node->sector = front_sector;
+
+      *wall_node_ptr = ceil_node;
+      wall_node_ptr  = &ceil_node->next;
+    } else {
+      wall_node_t *node = malloc(sizeof(wall_node_t));
+      node->next        = NULL;
+
+      vec2_t start = map->vertices[linedef->start_idx];
+      vec2_t end   = map->vertices[linedef->end_idx];
+
+      sidedef_t *sidedef = &map->sidedefs[linedef->front_sidedef];
+      sector_t  *sector  = &map->sectors[sidedef->sector_idx];
+
+      vec3_t p0 = {start.x, sector->floor, -start.y};
+      vec3_t p1 = {end.x, sector->floor, -end.y};
+      vec3_t p2 = {end.x, sector->ceiling, -end.y};
+      vec3_t p3 = {start.x, sector->ceiling, -start.y};
+
+      node->model  = model_from_vertices(p0, p1, p2, p3);
+      node->sector = sector;
+
+      *wall_node_ptr = node;
+      wall_node_ptr  = &node->next;
+    }
   }
 }
 
