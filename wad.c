@@ -1,6 +1,7 @@
 #include "wad.h"
 #include "gl_map.h"
 #include "map.h"
+#include "palette.h"
 #include "vector.h"
 
 #include <math.h>
@@ -76,6 +77,14 @@ int wad_find_lump(const char *lumpname, const wad_t *wad) {
   }
 
   return -1;
+}
+
+int wad_read_playpal(palette_t *palette, const wad_t *wad) {
+  int playpal_index = wad_find_lump("PLAYPAL", wad);
+  if (playpal_index < 0) { return 1; }
+
+  memcpy(palette->colors, wad->lumps[playpal_index].data, NUM_COLORS * 3);
+  return 0;
 }
 
 #define THINGS_IDX   1

@@ -25,9 +25,10 @@ const char *vertSrc =
 const char *fragSrc =
     "#version 330 core\n"
     "out vec4 fragColor;\n"
-    "uniform vec4 color;\n"
+    "uniform sampler1D palette;\n"
+    "uniform int color;\n"
     "void main() {\n"
-    "  fragColor = color;\n"
+    "  fragColor = texelFetch(palette, color, 0);\n"
     "}\n";
 
 static mesh_t quad_mesh;
@@ -58,11 +59,15 @@ void renderer_set_projection(mat4_t projection) {
   glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection.v);
 }
 
+void renderer_set_palette_texture(GLuint palette_texture) {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_1D, palette_texture);
+}
+
 vec2_t renderer_get_size() { return (vec2_t){width, height}; }
 
-void renderer_draw_mesh(const mesh_t *mesh, mat4_t transformation,
-                        vec4_t color) {
-  glUniform4fv(color_location, 1, color.v);
+void renderer_draw_mesh(const mesh_t *mesh, mat4_t transformation, int color) {
+  glUniform1i(color_location, color);
   glUniformMatrix4fv(model_location, 1, GL_FALSE, transformation.v);
 
   glBindVertexArray(mesh->vao);
@@ -70,7 +75,7 @@ void renderer_draw_mesh(const mesh_t *mesh, mat4_t transformation,
   glDrawElements(GL_TRIANGLES, mesh->num_indices, GL_UNSIGNED_INT, NULL);
 }
 
-void renderer_draw_point(vec2_t point, float size, vec4_t color) {
+void renderer_draw_point(vec2_t point, float size, int color) {
   mat4_t translation = mat4_translate((vec3_t){point.x, point.y, 0.f});
   mat4_t scale       = mat4_scale((vec3_t){size, size, 1.f});
   mat4_t model       = mat4_mul(scale, translation);
@@ -78,7 +83,7 @@ void renderer_draw_point(vec2_t point, float size, vec4_t color) {
   renderer_draw_mesh(&quad_mesh, model, color);
 }
 
-void renderer_draw_line(vec2_t p0, vec2_t p1, float width, vec4_t color) {
+void renderer_draw_line(vec2_t p0, vec2_t p1, float width, int color) {
   float x = p1.x - p0.x, y = p0.y - p1.y;
   float r = sqrtf(x * x + y * y), angle = atan2f(y, x);
 
@@ -91,7 +96,7 @@ void renderer_draw_line(vec2_t p0, vec2_t p1, float width, vec4_t color) {
   renderer_draw_mesh(&quad_mesh, model, color);
 }
 
-void renderer_draw_quad(vec2_t center, vec2_t size, float angle, vec4_t color) {
+void renderer_draw_quad(vec2_t center, vec2_t size, float angle, int color) {
   mat4_t translation = mat4_translate((vec3_t){center.x, center.y, 0.f});
   mat4_t scale       = mat4_scale((vec3_t){size.x, size.y, 1.f});
   mat4_t rotation    = mat4_rotate((vec3_t){0.f, 0.f, 1.f}, angle);
@@ -111,6 +116,9 @@ static void init_shader() {
   model_location      = glGetUniformLocation(program, "model");
   view_location       = glGetUniformLocation(program, "view");
   color_location      = glGetUniformLocation(program, "color");
+
+  GLuint palette_location = glGetUniformLocation(program, "palette");
+  glUniform1i(palette_location, 0);
 }
 
 static void init_quad() {
