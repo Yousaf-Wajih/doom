@@ -14,6 +14,7 @@ typedef struct mesh {
 
 typedef struct vertex {
   vec3_t position;
+  vec2_t tex_coords;
 } vertex_t;
 
 void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,

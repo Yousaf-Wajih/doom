@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "camera.h"
+#include "flat_texture.h"
 #include "gl_map.h"
 #include "input.h"
 #include "map.h"
@@ -40,6 +41,8 @@ static void   generate_meshes(const map_t *map, const gl_map_t *gl_map);
 static mat4_t model_from_vertices(vec3_t p0, vec3_t p1, vec3_t p2, vec3_t p3);
 
 static palette_t palette;
+static size_t    num_flats;
+static GLuint   *flat_textures;
 
 static camera_t camera;
 static vec2_t   last_mouse;
@@ -98,6 +101,13 @@ void engine_init(wad_t *wad, const char *mapname) {
   wad_read_playpal(&palette, wad);
   GLuint palette_texture = palette_generate_texture(&palette);
   renderer_set_palette_texture(palette_texture);
+
+  flat_tex_t *flats = wad_read_flats(&num_flats, wad);
+  flat_textures     = malloc(sizeof(GLuint) * num_flats);
+  for (int i = 0; i < num_flats; i++) {
+    flat_textures[i] = generate_flat_texture(&flats[i]);
+  }
+  free(flats);
 }
 
 void engine_update(float dt) {
@@ -148,6 +158,7 @@ void engine_render() {
       camera.position, vec3_add(camera.position, camera.forward), camera.up);
   renderer_set_view(view);
 
+  renderer_set_draw_texture(0);
   for (wall_node_t *node = wall_list; node != NULL; node = node->next) {
     srand((uintptr_t)node->sector);
     int color = rand() % NUM_COLORS;
@@ -155,17 +166,25 @@ void engine_render() {
   }
 
   for (flat_node_t *node = flat_list; node != NULL; node = node->next) {
-    srand((uintptr_t)node->sector);
-    int color = rand() % NUM_COLORS;
+    int floor_tex =
+        node->sector->floor_tex < 0 || node->sector->floor_tex >= num_flats
+            ? 0
+            : flat_textures[node->sector->floor_tex];
 
+    int ceiling_tex =
+        node->sector->ceiling_tex < 0 || node->sector->ceiling_tex >= num_flats
+            ? 0
+            : flat_textures[node->sector->ceiling_tex];
+
+    renderer_set_draw_texture(floor_tex);
     renderer_draw_mesh(
         &node->mesh,
-        mat4_translate((vec3_t){0.f, node->sector->floor / SCALE, 0.f}), color);
+        mat4_translate((vec3_t){0.f, node->sector->floor / SCALE, 0.f}), 0);
 
+    renderer_set_draw_texture(ceiling_tex);
     renderer_draw_mesh(
         &node->mesh,
-        mat4_translate((vec3_t){0.f, node->sector->ceiling / SCALE, 0.f}),
-        color);
+        mat4_translate((vec3_t){0.f, node->sector->ceiling / SCALE, 0.f}), 0);
   }
 }
 
@@ -203,7 +222,8 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       }
 
       vertices[j] = (vertex_t){
-          .position = {v.x / SCALE, 0.f, -v.y / SCALE},
+          .position   = {v.x / SCALE, 0.f, -v.y / SCALE},
+          .tex_coords = {v.x / FLAT_TEXTURE_SIZE, -v.y / FLAT_TEXTURE_SIZE},
       };
     }
 

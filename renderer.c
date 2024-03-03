@@ -15,27 +15,37 @@ static void init_projection();
 const char *vertSrc =
     "#version 330 core\n"
     "layout(location = 0) in vec3 pos;\n"
+    "layout(location = 1) in vec2 texCoords;\n"
+    "out vec2 TexCoords;\n"
     "uniform mat4 model;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "void main() {\n"
     "  gl_Position = projection * view * model * vec4(pos, 1.0);\n"
+    "  TexCoords = texCoords;\n"
     "}\n";
 
 const char *fragSrc =
     "#version 330 core\n"
+    "in vec2 TexCoords;\n"
     "out vec4 fragColor;\n"
+    "uniform bool useTexture;\n"
+    "uniform usampler2D tex;\n"
     "uniform sampler1D palette;\n"
     "uniform int color;\n"
     "void main() {\n"
-    "  fragColor = texelFetch(palette, color, 0);\n"
+    "  if (useTexture) {\n"
+    "    fragColor = texelFetch(palette, int(texture(tex, TexCoords).r), 0);\n"
+    "  } else {\n"
+    "    fragColor = texelFetch(palette, color, 0);\n"
+    "  }\n"
     "}\n";
 
 static mesh_t quad_mesh;
 static float  width, height;
 static GLuint program;
 static GLuint model_location, view_location, projection_location;
-static GLuint color_location;
+static GLuint color_location, use_texture_location;
 
 void renderer_init(int w, int h) {
   width  = w;
@@ -62,6 +72,16 @@ void renderer_set_projection(mat4_t projection) {
 void renderer_set_palette_texture(GLuint palette_texture) {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_1D, palette_texture);
+}
+
+void renderer_set_draw_texture(GLuint texture) {
+  if (texture == 0) {
+    glUniform1i(use_texture_location, 0);
+  } else {
+    glUniform1i(use_texture_location, 1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture);
+  }
 }
 
 vec2_t renderer_get_size() { return (vec2_t){width, height}; }
@@ -112,13 +132,17 @@ static void init_shader() {
 
   glUseProgram(program);
 
-  projection_location = glGetUniformLocation(program, "projection");
-  model_location      = glGetUniformLocation(program, "model");
-  view_location       = glGetUniformLocation(program, "view");
-  color_location      = glGetUniformLocation(program, "color");
+  projection_location  = glGetUniformLocation(program, "projection");
+  model_location       = glGetUniformLocation(program, "model");
+  view_location        = glGetUniformLocation(program, "view");
+  color_location       = glGetUniformLocation(program, "color");
+  use_texture_location = glGetUniformLocation(program, "useTexture");
 
   GLuint palette_location = glGetUniformLocation(program, "palette");
   glUniform1i(palette_location, 0);
+
+  GLuint texture_location = glGetUniformLocation(program, "tex");
+  glUniform1i(texture_location, 1);
 }
 
 static void init_quad() {

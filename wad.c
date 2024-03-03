@@ -1,4 +1,5 @@
 #include "wad.h"
+#include "flat_texture.h"
 #include "gl_map.h"
 #include "map.h"
 #include "palette.h"
@@ -87,6 +88,28 @@ int wad_read_playpal(palette_t *palette, const wad_t *wad) {
   return 0;
 }
 
+flat_tex_t *wad_read_flats(size_t *num, const wad_t *wad) {
+  int f_start = wad_find_lump("F_START", wad);
+  int f_end   = wad_find_lump("F_END", wad);
+
+  if (num == NULL || f_end < 0 || f_start < 0) { return NULL; }
+
+  *num              = f_end - f_start - 1;
+  flat_tex_t *flats = malloc(sizeof(flat_tex_t) * *num);
+
+  for (int i = f_start + 1; i < f_end; i++) {
+    if (wad->lumps[i].size != FLAT_TEXTURE_SIZE * FLAT_TEXTURE_SIZE) {
+      (*num)--;
+      continue;
+    }
+
+    memcpy(flats[i - f_start - 1].data, wad->lumps[i].data,
+           FLAT_TEXTURE_SIZE * FLAT_TEXTURE_SIZE);
+  }
+
+  return flats;
+}
+
 #define THINGS_IDX   1
 #define LINEDEFS_IDX 2
 #define SIDEDEFS_IDX 3
@@ -99,7 +122,7 @@ int wad_read_playpal(palette_t *palette, const wad_t *wad) {
 static void read_vertices(map_t *map, const lump_t *lump);
 static void read_linedefs(map_t *map, const lump_t *lump);
 static void read_sidedefs(map_t *map, const lump_t *lump);
-static void read_sectors(map_t *map, const lump_t *lump);
+static void read_sectors(map_t *map, const lump_t *lump, const wad_t *wad);
 
 int wad_read_map(const char *mapname, map_t *map, const wad_t *wad) {
   int map_index = wad_find_lump(mapname, wad);
@@ -108,7 +131,7 @@ int wad_read_map(const char *mapname, map_t *map, const wad_t *wad) {
   read_vertices(map, &wad->lumps[map_index + VERTEXES_IDX]);
   read_linedefs(map, &wad->lumps[map_index + LINEDEFS_IDX]);
   read_sidedefs(map, &wad->lumps[map_index + SIDEDEFS_IDX]);
-  read_sectors(map, &wad->lumps[map_index + SECTORS_IDX]);
+  read_sectors(map, &wad->lumps[map_index + SECTORS_IDX], wad);
 
   return 0;
 }
@@ -153,14 +176,28 @@ void read_sidedefs(map_t *map, const lump_t *lump) {
   }
 }
 
-void read_sectors(map_t *map, const lump_t *lump) {
+void read_sectors(map_t *map, const lump_t *lump, const wad_t *wad) {
   map->num_sectors = lump->size / 26; // each sector is 26 bytes
   map->sectors     = malloc(sizeof(sector_t) * map->num_sectors);
 
+  int f_start = wad_find_lump("F_START", wad);
+  int f_end   = wad_find_lump("F_END", wad);
   for (int i = 0, j = 0; i < lump->size; i += 26, j++) {
     map->sectors[j].floor       = (int16_t)READ_I16(lump->data, i);
     map->sectors[j].ceiling     = (int16_t)READ_I16(lump->data, i + 2);
     map->sectors[j].light_level = (int16_t)READ_I16(lump->data, i + 20);
+
+    char name[9] = {0};
+
+    memcpy(name, &lump->data[i + 4], 8);
+    int floor = wad_find_lump(name, wad);
+    if (floor <= f_start || floor >= f_end) { floor = -1; }
+    map->sectors[j].floor_tex = floor - f_start - 1;
+
+    memcpy(name, &lump->data[i + 12], 8);
+    int ceiling = wad_find_lump(name, wad);
+    if (ceiling <= f_start || ceiling >= f_end) { ceiling = -1; }
+    map->sectors[j].ceiling_tex = ceiling - f_start - 1;
   }
 }
 
