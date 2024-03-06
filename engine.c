@@ -42,7 +42,7 @@ static mat4_t model_from_vertices(vec3_t p0, vec3_t p1, vec3_t p2, vec3_t p3);
 
 static palette_t palette;
 static size_t    num_flats;
-static GLuint   *flat_textures;
+static GLuint    flat_texture_array;
 
 static camera_t camera;
 static vec2_t   last_mouse;
@@ -102,11 +102,8 @@ void engine_init(wad_t *wad, const char *mapname) {
   GLuint palette_texture = palette_generate_texture(&palette);
   renderer_set_palette_texture(palette_texture);
 
-  flat_tex_t *flats = wad_read_flats(&num_flats, wad);
-  flat_textures     = malloc(sizeof(GLuint) * num_flats);
-  for (int i = 0; i < num_flats; i++) {
-    flat_textures[i] = generate_flat_texture(&flats[i]);
-  }
+  flat_tex_t *flats  = wad_read_flats(&num_flats, wad);
+  flat_texture_array = generate_flat_texture_array(flats, num_flats);
   free(flats);
 }
 
@@ -165,26 +162,24 @@ void engine_render() {
     renderer_draw_mesh(&quad_mesh, node->model, color);
   }
 
+  renderer_set_draw_texture(flat_texture_array);
   for (flat_node_t *node = flat_list; node != NULL; node = node->next) {
-    int floor_tex =
-        node->sector->floor_tex < 0 || node->sector->floor_tex >= num_flats
-            ? 0
-            : flat_textures[node->sector->floor_tex];
+    int floor_tex   = node->sector->floor_tex;
+    int ceiling_tex = node->sector->ceiling_tex;
 
-    int ceiling_tex =
-        node->sector->ceiling_tex < 0 || node->sector->ceiling_tex >= num_flats
-            ? 0
-            : flat_textures[node->sector->ceiling_tex];
+    if (floor_tex >= 0 && floor_tex < num_flats) {
+      renderer_set_texture_index(floor_tex);
+      renderer_draw_mesh(
+          &node->mesh,
+          mat4_translate((vec3_t){0.f, node->sector->floor / SCALE, 0.f}), 0);
+    }
 
-    renderer_set_draw_texture(floor_tex);
-    renderer_draw_mesh(
-        &node->mesh,
-        mat4_translate((vec3_t){0.f, node->sector->floor / SCALE, 0.f}), 0);
-
-    renderer_set_draw_texture(ceiling_tex);
-    renderer_draw_mesh(
-        &node->mesh,
-        mat4_translate((vec3_t){0.f, node->sector->ceiling / SCALE, 0.f}), 0);
+    if (ceiling_tex >= 0 && ceiling_tex < num_flats) {
+      renderer_set_texture_index(ceiling_tex);
+      renderer_draw_mesh(
+          &node->mesh,
+          mat4_translate((vec3_t){0.f, node->sector->ceiling / SCALE, 0.f}), 0);
+    }
   }
 }
 
