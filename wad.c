@@ -3,6 +3,7 @@
 #include "gl_map.h"
 #include "map.h"
 #include "palette.h"
+#include "patch.h"
 #include "vector.h"
 
 #include <math.h>
@@ -108,6 +109,52 @@ flat_tex_t *wad_read_flats(size_t *num, const wad_t *wad) {
   }
 
   return flats;
+}
+
+int wad_read_patch(patch_t *patch, const char *patch_name, const wad_t *wad) {
+  int patch_lump_idx = wad_find_lump(patch_name, wad);
+  if (patch_lump_idx < 0) { return 1; }
+  lump_t *patch_lump = &wad->lumps[patch_lump_idx];
+
+  patch->width  = READ_I16(patch_lump->data, 0);
+  patch->height = READ_I16(patch_lump->data, 2);
+  patch->data   = malloc(patch->width * patch->height);
+  memset(patch->data, 0, patch->width * patch->height);
+
+  for (int16_t x = 0; x < patch->width; x++) {
+    uint32_t column_offset = READ_I32(patch_lump->data, 8 + x * 4);
+    uint8_t  post_topdelta = 0;
+    for (;;) {
+      post_topdelta = patch_lump->data[column_offset++];
+      if (post_topdelta == 255) { break; }
+      uint8_t post_length = patch_lump->data[column_offset++];
+      column_offset++; // dummy value
+
+      for (int y = 0; y < post_length; y++) {
+        int data_byte = patch_lump->data[column_offset++];
+        int tex_x = x, tex_y = y + post_topdelta;
+        patch->data[tex_y * patch->width + tex_x] = data_byte;
+      }
+      column_offset++; // dummy value
+    }
+  }
+
+  return 0;
+}
+
+patch_t *wad_read_patches(size_t *num, const wad_t *wad) {
+  int     pnames_index = wad_find_lump("PNAMES", wad);
+  lump_t *pnames_lump  = &wad->lumps[pnames_index];
+  *num                 = READ_I32(pnames_lump->data, 0);
+  patch_t *patches     = malloc(sizeof(patch_t) * *num);
+
+  for (int i = 0; i < *num; i++) {
+    char patch_name[9] = {0};
+    memcpy(patch_name, &pnames_lump->data[i * 8 + 4], 8);
+    wad_read_patch(&patches[i], patch_name, wad);
+  }
+
+  return patches;
 }
 
 #define THINGS_IDX   1

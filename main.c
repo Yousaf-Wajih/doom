@@ -1,6 +1,8 @@
 #include "engine.h"
+#include "gl_helpers.h"
 #include "input.h"
 #include "renderer.h"
+#include "vector.h"
 #include "wad.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -40,7 +42,24 @@ int main(int argc, char **argv) {
   }
 
   renderer_init(WIDTH, HEIGHT);
-  engine_init(&wad, "E1M1");
+  renderer_set_draw_texture(0);
+  // engine_init(&wad, "E1M1");
+
+  palette_t palette;
+  wad_read_playpal(&palette, &wad);
+  GLuint palette_texture = palette_generate_texture(&palette);
+  renderer_set_palette_texture(palette_texture);
+
+  size_t   num_textures;
+  patch_t *patches = wad_read_patches(&num_textures, &wad);
+  GLuint  *tex     = malloc(sizeof(GLuint) * num_textures);
+  for (int i = 0; i < num_textures; i++) {
+    tex[i] =
+        generate_texture(patches[i].width, patches[i].height, patches[i].data);
+  }
+
+  size_t index = 0;
+  float  time  = .5f;
 
   char  title[128];
   float last = 0.f;
@@ -49,14 +68,26 @@ int main(int argc, char **argv) {
     float delta = now - last;
     last        = now;
 
-    engine_update(delta);
+    time -= delta;
+    if (time <= 0.f) {
+      time = .5f;
+      if (++index >= num_textures) { index = 0; }
+    }
+
+    // engine_update(delta);
 
     glfwPollEvents();
     snprintf(title, 128, "DooM | %.0f", 1.f / delta);
     glfwSetWindowTitle(window, title);
 
     renderer_clear();
-    engine_render();
+    // engine_render();
+    renderer_set_draw_texture(tex[index]);
+    renderer_set_texture_index(0);
+    renderer_draw_quad(
+        (vec2_t){WIDTH / 2.f, HEIGHT / 2.f},
+        (vec2_t){patches[index].width * 5.f, patches[index].height * 5.f}, 0.f,
+        0);
     glfwSwapBuffers(window);
   }
 

@@ -53,7 +53,7 @@ void renderer_init(int w, int h) {
   width  = w;
   height = h;
 
-  glClearColor(.2f, .2f, .2f, 1.f);
+  glClearColor(0.f, 0.f, 0.f, 1.f);
   glEnable(GL_DEPTH_TEST);
 
   init_quad();
@@ -154,10 +154,10 @@ static void init_shader() {
 
 static void init_quad() {
   vertex_t vertices[] = {
-      {.position = {.5f, .5f, 0.f}},   // top-right
-      {.position = {.5f, -.5f, 0.f}},  // bottom-right
-      {.position = {-.5f, -.5f, 0.f}}, // bottom-left
-      {.position = {-.5f, .5f, 0.f}},  // top-left
+      {.position = {.5f, .5f, 0.f},   .tex_coords = {1.f, 1.f}}, // top-right
+      {.position = {.5f, -.5f, 0.f},  .tex_coords = {1.f, 0.f}}, // bottom-right
+      {.position = {-.5f, -.5f, 0.f}, .tex_coords = {0.f, 0.f}}, // bottom-left
+      {.position = {-.5f, .5f, 0.f},  .tex_coords = {0.f, 1.f}}, // top-left
   };
 
   uint32_t indices[] = {

@@ -42,3 +42,21 @@ GLuint link_program(size_t num_shaders, ...) {
 
   return program;
 }
+
+GLuint generate_texture(uint16_t width, uint16_t height, uint8_t *data) {
+  GLuint tex_id;
+  glGenTextures(1, &tex_id);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, tex_id);
+
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R8UI, width, height, 1, 0,
+               GL_RED_INTEGER, GL_UNSIGNED_BYTE, data);
+
+  return tex_id;
+}

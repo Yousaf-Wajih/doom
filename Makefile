@@ -1,5 +1,5 @@
-CC = gcc
-C_FLAGS = -O3 -MMD -MP
+CC = clang
+C_FLAGS = -O0 -g -MMD -MP
 L_FLAGS = -lm -lglfw -lGL -lGLEW
 
 BIN = doom
