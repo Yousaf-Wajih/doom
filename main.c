@@ -4,6 +4,7 @@
 #include "renderer.h"
 #include "vector.h"
 #include "wad.h"
+#include "wall_texture.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -50,12 +51,12 @@ int main(int argc, char **argv) {
   GLuint palette_texture = palette_generate_texture(&palette);
   renderer_set_palette_texture(palette_texture);
 
-  size_t   num_textures;
-  patch_t *patches = wad_read_patches(&num_textures, &wad);
-  GLuint  *tex     = malloc(sizeof(GLuint) * num_textures);
+  size_t      num_textures;
+  wall_tex_t *textures = wad_read_textures(&num_textures, "TEXTURE1", &wad);
+  GLuint     *tex      = malloc(sizeof(GLuint) * num_textures);
   for (int i = 0; i < num_textures; i++) {
-    tex[i] =
-        generate_texture(patches[i].width, patches[i].height, patches[i].data);
+    tex[i] = generate_texture(textures[i].width, textures[i].height,
+                              textures[i].data);
   }
 
   size_t index = 0;
@@ -86,8 +87,8 @@ int main(int argc, char **argv) {
     renderer_set_texture_index(0);
     renderer_draw_quad(
         (vec2_t){WIDTH / 2.f, HEIGHT / 2.f},
-        (vec2_t){patches[index].width * 5.f, patches[index].height * 5.f}, 0.f,
-        0);
+        (vec2_t){textures[index].width * 3.f, textures[index].height * 3.f},
+        0.f, 0);
     glfwSwapBuffers(window);
   }
 

@@ -8,6 +8,7 @@
 #include "map.h"
 #include "palette.h"
 #include "patch.h"
+#include "wall_texture.h"
 
 typedef struct lump {
   char    *name;
@@ -33,5 +34,7 @@ int wad_read_patch(patch_t *patch, const char *patch_name, const wad_t *wad);
 int wad_read_playpal(palette_t *palette, const wad_t *wad);
 flat_tex_t *wad_read_flats(size_t *num, const wad_t *wad);
 patch_t    *wad_read_patches(size_t *num, const wad_t *wad);
+wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
+                              const wad_t *wad);
 
 #endif // !_WAD_H
