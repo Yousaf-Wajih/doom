@@ -1,10 +1,7 @@
 #include "engine.h"
-#include "gl_helpers.h"
 #include "input.h"
 #include "renderer.h"
-#include "vector.h"
 #include "wad.h"
-#include "wall_texture.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -25,6 +22,7 @@ int main(int argc, char **argv) {
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "DooM", NULL, NULL);
   glfwMakeContextCurrent(window);
+  glfwSwapInterval(1);
 
   if (glewInit() != GLEW_OK) {
     fprintf(stderr, "Failed to initalize GLEW\n");
@@ -43,24 +41,7 @@ int main(int argc, char **argv) {
   }
 
   renderer_init(WIDTH, HEIGHT);
-  renderer_set_draw_texture(0);
-  // engine_init(&wad, "E1M1");
-
-  palette_t palette;
-  wad_read_playpal(&palette, &wad);
-  GLuint palette_texture = palette_generate_texture(&palette);
-  renderer_set_palette_texture(palette_texture);
-
-  size_t      num_textures;
-  wall_tex_t *textures = wad_read_textures(&num_textures, "TEXTURE1", &wad);
-  GLuint     *tex      = malloc(sizeof(GLuint) * num_textures);
-  for (int i = 0; i < num_textures; i++) {
-    tex[i] = generate_texture(textures[i].width, textures[i].height,
-                              textures[i].data);
-  }
-
-  size_t index = 0;
-  float  time  = .5f;
+  engine_init(&wad, "E1M1");
 
   char  title[128];
   float last = 0.f;
@@ -69,26 +50,14 @@ int main(int argc, char **argv) {
     float delta = now - last;
     last        = now;
 
-    time -= delta;
-    if (time <= 0.f) {
-      time = .5f;
-      if (++index >= num_textures) { index = 0; }
-    }
-
-    // engine_update(delta);
+    engine_update(delta);
 
     glfwPollEvents();
     snprintf(title, 128, "DooM | %.0f", 1.f / delta);
     glfwSetWindowTitle(window, title);
 
     renderer_clear();
-    // engine_render();
-    renderer_set_draw_texture(tex[index]);
-    renderer_set_texture_index(0);
-    renderer_draw_quad(
-        (vec2_t){WIDTH / 2.f, HEIGHT / 2.f},
-        (vec2_t){textures[index].width * 3.f, textures[index].height * 3.f},
-        0.f, 0);
+    engine_render();
     glfwSwapBuffers(window);
   }
 

@@ -23,6 +23,14 @@ void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,
                         (void *)offsetof(vertex_t, tex_coords));
   glEnableVertexAttribArray(1);
 
+  glVertexAttribIPointer(2, 1, GL_INT, sizeof(vertex_t),
+                         (void *)offsetof(vertex_t, texture_index));
+  glEnableVertexAttribArray(2);
+
+  glVertexAttribIPointer(3, 1, GL_INT, sizeof(vertex_t),
+                         (void *)offsetof(vertex_t, texture_type));
+  glEnableVertexAttribArray(3);
+
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * num_indices, indices,
                GL_STATIC_DRAW);
