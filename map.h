@@ -15,6 +15,8 @@ typedef struct sector {
 } sector_t;
 
 typedef struct sidedef {
+  int16_t  x_off, y_off;
+  uint16_t upper, lower, middle;
   uint16_t sector_idx;
 } sidedef_t;
 

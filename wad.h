@@ -27,8 +27,9 @@ int  wad_load_from_file(const char *filename, wad_t *wad);
 void wad_free(wad_t *wad);
 
 int wad_find_lump(const char *lumpname, const wad_t *wad);
-int wad_read_map(const char *mapname, map_t *map, const wad_t *wad);
 int wad_read_gl_map(const char *gl_mapname, gl_map_t *map, const wad_t *wad);
+int wad_read_map(const char *mapname, map_t *map, const wad_t *wad,
+                 const wall_tex_t *tex, int num_tex);
 
 int wad_read_patch(patch_t *patch, const char *patch_name, const wad_t *wad);
 int wad_read_playpal(palette_t *palette, const wad_t *wad);

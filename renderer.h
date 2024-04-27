@@ -10,6 +10,7 @@ void renderer_clear();
 
 void renderer_set_palette_texture(GLuint palette_texture);
 void renderer_set_draw_texture(GLuint texture);
+void renderer_set_draw_texture_array(GLuint texture);
 void renderer_set_projection(mat4_t projection);
 void renderer_set_view(mat4_t view);
 

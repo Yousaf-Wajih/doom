@@ -5,6 +5,7 @@
 #include "palette.h"
 #include "patch.h"
 #include "vector.h"
+#include "wall_texture.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -168,7 +169,8 @@ wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
 
   wall_tex_t *textures = malloc(sizeof(wall_tex_t) * *num);
   for (int i = 0; i < *num; i++) {
-    uint32_t offset    = READ_I32(tex_lump->data, 4 * i + 4);
+    uint32_t offset = READ_I32(tex_lump->data, 4 * i + 4);
+    memcpy(textures[i].name, tex_lump->data + offset, 8);
     textures[i].width  = READ_I16(tex_lump->data, offset + 12);
     textures[i].height = READ_I16(tex_lump->data, offset + 14);
 
@@ -210,16 +212,18 @@ wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
 
 static void read_vertices(map_t *map, const lump_t *lump);
 static void read_linedefs(map_t *map, const lump_t *lump);
-static void read_sidedefs(map_t *map, const lump_t *lump);
+static void read_sidedefs(map_t *map, const lump_t *lump, const wall_tex_t *tex,
+                          int num_tex);
 static void read_sectors(map_t *map, const lump_t *lump, const wad_t *wad);
 
-int wad_read_map(const char *mapname, map_t *map, const wad_t *wad) {
+int wad_read_map(const char *mapname, map_t *map, const wad_t *wad,
+                 const wall_tex_t *tex, int num_tex) {
   int map_index = wad_find_lump(mapname, wad);
   if (map_index < 0) { return 1; }
 
   read_vertices(map, &wad->lumps[map_index + VERTEXES_IDX]);
   read_linedefs(map, &wad->lumps[map_index + LINEDEFS_IDX]);
-  read_sidedefs(map, &wad->lumps[map_index + SIDEDEFS_IDX]);
+  read_sidedefs(map, &wad->lumps[map_index + SIDEDEFS_IDX], tex, num_tex);
   read_sectors(map, &wad->lumps[map_index + SECTORS_IDX], wad);
 
   return 0;
@@ -256,11 +260,35 @@ void read_linedefs(map_t *map, const lump_t *lump) {
   }
 }
 
-void read_sidedefs(map_t *map, const lump_t *lump) {
+void read_sidedefs(map_t *map, const lump_t *lump, const wall_tex_t *tex,
+                   int num_tex) {
   map->num_sidedefs = lump->size / 30; // each sidedef is 30 bytes
   map->sidedefs     = malloc(sizeof(sidedef_t) * map->num_sidedefs);
 
   for (int i = 0, j = 0; i < lump->size; i += 30, j++) {
+    for (int k = 0; k < num_tex; k++) {
+      if (strncmp((char *)lump->data + i + 4, tex[k].name, 8) == 0) {
+        map->sidedefs[j].upper = k;
+        break;
+      }
+    }
+
+    for (int k = 0; k < num_tex; k++) {
+      if (strncmp((char *)lump->data + i + 12, tex[k].name, 8) == 0) {
+        map->sidedefs[j].lower = k;
+        break;
+      }
+    }
+
+    for (int k = 0; k < num_tex; k++) {
+      if (strncmp((char *)lump->data + i + 20, tex[k].name, 8) == 0) {
+        map->sidedefs[j].middle = k;
+        break;
+      }
+    }
+
+    map->sidedefs[j].x_off      = (int16_t)READ_I16(lump->data, i);
+    map->sidedefs[j].y_off      = (int16_t)READ_I16(lump->data, i + 2);
     map->sidedefs[j].sector_idx = READ_I16(lump->data, i + 28);
   }
 }

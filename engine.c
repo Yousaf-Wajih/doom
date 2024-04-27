@@ -12,6 +12,7 @@
 #include "util.h"
 #include "vector.h"
 #include "wad.h"
+#include "wall_texture.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -27,18 +28,24 @@
 #define SCALE (100.f)
 
 typedef struct draw_node {
+  int               texture;
   mesh_t            mesh;
   const sector_t   *sector;
   struct draw_node *next;
 } draw_node_t, draw_list_t;
 
+typedef struct wall_tex_info {
+  int width, height;
+} wall_tex_info_t;
+
 static void   generate_meshes(const map_t *map, const gl_map_t *gl_map);
 static mat4_t model_from_vertices(vec3_t p0, vec3_t p1, vec3_t p2, vec3_t p3);
 
-static palette_t palette;
-static size_t    num_flats, num_wall_textures;
-static GLuint    flat_texture_array;
-static GLuint   *wall_textures;
+static palette_t        palette;
+static wall_tex_info_t *wall_textures_info;
+static size_t           num_flats, num_wall_textures;
+static GLuint           flat_texture_array;
+static GLuint          *wall_textures;
 
 static camera_t camera;
 static vec2_t   last_mouse;
@@ -71,12 +78,6 @@ void engine_init(wad_t *wad, const char *mapname) {
 
   mesh_create(&quad_mesh, 4, vertices, 6, indices);
 
-  map_t map;
-  if (wad_read_map(mapname, &map, wad) != 0) {
-    fprintf(stderr, "Failed to read map (%s) from WAD file\n", mapname);
-    return;
-  }
-
   char *gl_mapname = malloc(strlen(mapname) + 4);
   gl_mapname[0]    = 'G';
   gl_mapname[1]    = 'L';
@@ -101,9 +102,18 @@ void engine_init(wad_t *wad, const char *mapname) {
 
   wall_tex_t *textures = wad_read_textures(&num_wall_textures, "TEXTURE1", wad);
   wall_textures        = malloc(sizeof(GLuint) * num_wall_textures);
+  wall_textures_info   = malloc(sizeof(wall_tex_info_t) * num_wall_textures);
   for (int i = 0; i < num_wall_textures; i++) {
     wall_textures[i] = generate_texture(textures[i].width, textures[i].height,
                                         textures[i].data);
+    wall_textures_info[i] =
+        (wall_tex_info_t){textures[i].width, textures[i].height};
+  }
+
+  map_t map;
+  if (wad_read_map(mapname, &map, wad, textures, num_wall_textures) != 0) {
+    fprintf(stderr, "Failed to read map (%s) from WAD file\n", mapname);
+    return;
   }
 
   generate_meshes(&map, &gl_map);
@@ -157,8 +167,9 @@ void engine_render() {
       camera.position, vec3_add(camera.position, camera.forward), camera.up);
   renderer_set_view(view);
 
-  renderer_set_draw_texture(flat_texture_array);
+  renderer_set_draw_texture_array(flat_texture_array);
   for (draw_node_t *node = draw_list; node != NULL; node = node->next) {
+    if (node->texture != -1) { renderer_set_draw_texture(node->texture); }
     renderer_draw_mesh(&node->mesh, mat4_identity());
   }
 }
@@ -235,6 +246,7 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       indices[j + 2] = k + 1;
     }
 
+    floor_node->texture = ceil_node->texture = -1;
     floor_node->sector = ceil_node->sector = sector;
     mesh_create(&floor_node->mesh, n_vertices, floor_vertices, n_indices,
                 indices);
@@ -316,6 +328,8 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       mesh_create(&ceil_node->mesh, 4, ceil_vertices, 6, indices);
       ceil_node->sector = front_sector;
 
+      floor_node->texture = ceil_node->texture = -1;
+
       *draw_node_ptr = ceil_node;
       draw_node_ptr  = &ceil_node->next;
     } else {
@@ -333,6 +347,9 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       vec3_t p2 = {end.x, sector->ceiling, -end.y};
       vec3_t p3 = {start.x, sector->ceiling, -start.y};
 
+      const float x = p1.x - p0.x, y = p1.z - p0.z;
+      const float width = sqrtf(x * x + y * y), height = p3.y - p0.y;
+
       p0 = vec3_scale(p0, 1.f / SCALE);
       p1 = vec3_scale(p1, 1.f / SCALE);
       p2 = vec3_scale(p2, 1.f / SCALE);
@@ -341,15 +358,20 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       srand((uintptr_t)sector);
       int color = rand() % NUM_COLORS;
 
+      float min_x = sidedef->x_off, min_y = sidedef->y_off;
+      float max_x = min_x + width / wall_textures_info[sidedef->middle].width;
+      float max_y = min_y + height / wall_textures_info[sidedef->middle].height;
+
       vertex_t vertices[] = {
-          {.position = p0, .texture_index = color, .texture_type = 0},
-          {.position = p1, .texture_index = color, .texture_type = 0},
-          {.position = p2, .texture_index = color, .texture_type = 0},
-          {.position = p3, .texture_index = color, .texture_type = 0},
+          {p0, {min_x, max_y}, 0, 2},
+          {p1, {max_x, max_y}, 0, 2},
+          {p2, {max_x, min_y}, 0, 2},
+          {p3, {min_x, min_y}, 0, 2},
       };
 
       mesh_create(&node->mesh, 4, vertices, 6, indices);
-      node->sector = sector;
+      node->texture = wall_textures[sidedef->middle];
+      node->sector  = sector;
 
       *draw_node_ptr = node;
       draw_node_ptr  = &node->next;
