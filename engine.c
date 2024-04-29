@@ -355,18 +355,21 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       p2 = vec3_scale(p2, 1.f / SCALE);
       p3 = vec3_scale(p3, 1.f / SCALE);
 
-      srand((uintptr_t)sector);
-      int color = rand() % NUM_COLORS;
+      float tw = wall_textures_info[sidedef->middle].width;
+      float th = wall_textures_info[sidedef->middle].height;
 
-      float min_x = sidedef->x_off, min_y = sidedef->y_off;
-      float max_x = min_x + width / wall_textures_info[sidedef->middle].width;
-      float max_y = min_y + height / wall_textures_info[sidedef->middle].height;
+      float w = width / tw, h = height / th;
+      float x_off = sidedef->x_off / tw, y_off = sidedef->y_off / th;
+      if (linedef->flags & LINEDEF_FLAGS_LOWER_UNPEGGED) { y_off -= h; }
+
+      float tx0 = x_off, ty0 = y_off + h;
+      float tx1 = x_off + w, ty1 = y_off;
 
       vertex_t vertices[] = {
-          {p0, {min_x, max_y}, 0, 2},
-          {p1, {max_x, max_y}, 0, 2},
-          {p2, {max_x, min_y}, 0, 2},
-          {p3, {min_x, min_y}, 0, 2},
+          {p0, {tx0, ty0}, 0, 2},
+          {p1, {tx1, ty0}, 0, 2},
+          {p2, {tx1, ty1}, 0, 2},
+          {p3, {tx0, ty1}, 0, 2},
       };
 
       mesh_create(&node->mesh, 4, vertices, 6, indices);

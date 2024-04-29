@@ -6,7 +6,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define LINEDEF_FLAGS_TWO_SIDED 0x0004
+#define LINEDEF_FLAGS_TWO_SIDED      0x0004
+#define LINEDEF_FLAGS_UPPER_UNPEGGED 0x0008
+#define LINEDEF_FLAGS_LOWER_UNPEGGED 0x0010
 
 typedef struct sector {
   int16_t floor, ceiling;
