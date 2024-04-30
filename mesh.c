@@ -31,6 +31,10 @@ void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,
                          (void *)offsetof(vertex_t, texture_type));
   glEnableVertexAttribArray(3);
 
+  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        (void *)offsetof(vertex_t, light));
+  glEnableVertexAttribArray(4);
+
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * num_indices, indices,
                GL_STATIC_DRAW);

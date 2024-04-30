@@ -17,9 +17,11 @@ const char *vertSrc =
     "layout (location = 1) in vec2 texCoords;\n"
     "layout (location = 2) in int texIndex;\n"
     "layout (location = 3) in int texType;\n"
+    "layout (location = 4) in float light;\n"
     "out vec2 TexCoords;\n"
     "flat out int TexIndex;\n"
     "flat out int TexType;\n"
+    "out float Light;"
     "uniform mat4 model;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
@@ -28,6 +30,7 @@ const char *vertSrc =
     "  TexIndex = texIndex;\n"
     "  TexType = texType;\n"
     "  TexCoords = texCoords;\n"
+    "  Light = light;\n"
     "}\n";
 
 const char *fragSrc =
@@ -35,20 +38,23 @@ const char *fragSrc =
     "in vec2 TexCoords;\n"
     "flat in int TexIndex;\n"
     "flat in int TexType;\n"
+    "in float Light;\n"
     "out vec4 fragColor;\n"
     "uniform usampler2D tex;\n"
     "uniform usampler2DArray tex_array;\n"
     "uniform sampler1D palette;\n"
     "void main() {\n"
+    "  vec3 color;"
     "  if (TexIndex == -1) { discard; }\n"
     "  else if (TexType == 0) {\n"
-    "    fragColor = texelFetch(palette, TexIndex, 0);\n"
+    "    color = vec3(texelFetch(palette, TexIndex, 0));\n"
     "  } else if (TexType == 1) {\n"
-    "    fragColor = texelFetch(palette, int(texture(tex_array, "
-    "                 vec3(TexCoords, TexIndex)).r), 0);\n"
+    "    color = vec3(texelFetch(palette, int(texture(tex_array, "
+    "                 vec3(TexCoords, TexIndex)).r), 0));\n"
     "  } else if (TexType == 2) {\n"
-    "    fragColor = texelFetch(palette, int(texture(tex, TexCoords).r), 0);\n"
+    "   color = vec3(texelFetch(palette, int(texture(tex, TexCoords).r), 0));\n"
     "  }\n"
+    "  fragColor = vec4(color * Light, 1.0);\n"
     "}\n";
 
 static mesh_t quad_mesh;
