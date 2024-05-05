@@ -4,6 +4,7 @@
 #include "map.h"
 #include "palette.h"
 #include "patch.h"
+#include "util.h"
 #include "vector.h"
 #include "wall_texture.h"
 
@@ -76,7 +77,7 @@ void wad_free(wad_t *wad) {
 
 int wad_find_lump(const char *lumpname, const wad_t *wad) {
   for (int i = 0; i < wad->num_lumps; i++) {
-    if (strcmp(wad->lumps[i].name, lumpname) == 0) { return i; }
+    if (strcmp_nocase(wad->lumps[i].name, lumpname) == 0) { return i; }
   }
 
   return -1;
@@ -179,8 +180,8 @@ wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
 
     uint16_t num_patches = READ_I16(tex_lump->data, offset + 20);
     for (int j = 0; j < num_patches; j++) {
-      uint16_t origin_x  = READ_I16(tex_lump->data, offset + 22 + j * 10);
-      uint16_t origin_y  = READ_I16(tex_lump->data, offset + 24 + j * 10);
+      int16_t  origin_x  = READ_I16(tex_lump->data, offset + 22 + j * 10);
+      int16_t  origin_y  = READ_I16(tex_lump->data, offset + 24 + j * 10);
       uint16_t patch_idx = READ_I16(tex_lump->data, offset + 26 + j * 10);
 
       patch_t patch = patches[patch_idx];
@@ -267,21 +268,21 @@ void read_sidedefs(map_t *map, const lump_t *lump, const wall_tex_t *tex,
 
   for (int i = 0, j = 0; i < lump->size; i += 30, j++) {
     for (int k = 0; k < num_tex; k++) {
-      if (strncmp((char *)lump->data + i + 4, tex[k].name, 8) == 0) {
+      if (strncmp_nocase((char *)lump->data + i + 4, tex[k].name, 8) == 0) {
         map->sidedefs[j].upper = k;
         break;
       }
     }
 
     for (int k = 0; k < num_tex; k++) {
-      if (strncmp((char *)lump->data + i + 12, tex[k].name, 8) == 0) {
+      if (strncmp_nocase((char *)lump->data + i + 12, tex[k].name, 8) == 0) {
         map->sidedefs[j].lower = k;
         break;
       }
     }
 
     for (int k = 0; k < num_tex; k++) {
-      if (strncmp((char *)lump->data + i + 20, tex[k].name, 8) == 0) {
+      if (strncmp_nocase((char *)lump->data + i + 20, tex[k].name, 8) == 0) {
         map->sidedefs[j].middle = k;
         break;
       }

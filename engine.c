@@ -298,8 +298,10 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         };
 
         mesh_create(&floor_node->mesh, 4, vertices, 6, indices);
-        floor_node->sector  = front_sector;
-        floor_node->texture = wall_textures[sidedef->lower];
+        floor_node->sector = front_sector;
+        if (sidedef->lower >= 0) {
+          floor_node->texture = wall_textures[sidedef->lower];
+        }
       }
 
       *draw_node_ptr = floor_node;
@@ -340,8 +342,10 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         };
 
         mesh_create(&ceil_node->mesh, 4, vertices, 6, indices);
-        ceil_node->sector  = front_sector;
-        ceil_node->texture = wall_textures[sidedef->upper];
+        ceil_node->sector = front_sector;
+        if (sidedef->upper >= 0) {
+          ceil_node->texture = wall_textures[sidedef->upper];
+        }
       }
 
       *draw_node_ptr = ceil_node;

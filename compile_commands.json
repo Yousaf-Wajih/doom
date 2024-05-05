@@ -1,0 +1,170 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/camera.o",
+      "camera.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/camera.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/camera.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/engine.o",
+      "engine.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/engine.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/engine.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/flat_texture.o",
+      "flat_texture.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/flat_texture.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/flat_texture.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/gl_helpers.o",
+      "gl_helpers.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/gl_helpers.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/gl_helpers.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/input.o",
+      "input.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/input.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/input.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/main.o",
+      "main.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/main.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/matrix.o",
+      "matrix.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/matrix.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/matrix.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/mesh.o",
+      "mesh.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/mesh.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/mesh.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/palette.o",
+      "palette.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/palette.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/palette.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/renderer.o",
+      "renderer.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/renderer.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/renderer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/vector.o",
+      "vector.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/vector.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/vector.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-c",
+      "-o",
+      "build/wad.o",
+      "wad.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/wad.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/wad.o"
+  }
+]
