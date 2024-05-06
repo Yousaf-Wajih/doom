@@ -213,9 +213,10 @@ wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
 
 static void read_vertices(map_t *map, const lump_t *lump);
 static void read_linedefs(map_t *map, const lump_t *lump);
+static void read_things(map_t *map, const lump_t *lump);
+static void read_sectors(map_t *map, const lump_t *lump, const wad_t *wad);
 static void read_sidedefs(map_t *map, const lump_t *lump, const wall_tex_t *tex,
                           int num_tex);
-static void read_sectors(map_t *map, const lump_t *lump, const wad_t *wad);
 
 int wad_read_map(const char *mapname, map_t *map, const wad_t *wad,
                  const wall_tex_t *tex, int num_tex) {
@@ -224,6 +225,7 @@ int wad_read_map(const char *mapname, map_t *map, const wad_t *wad,
 
   read_vertices(map, &wad->lumps[map_index + VERTEXES_IDX]);
   read_linedefs(map, &wad->lumps[map_index + LINEDEFS_IDX]);
+  read_things(map, &wad->lumps[map_index + THINGS_IDX]);
   read_sidedefs(map, &wad->lumps[map_index + SIDEDEFS_IDX], tex, num_tex);
   read_sectors(map, &wad->lumps[map_index + SECTORS_IDX], wad);
 
@@ -258,6 +260,20 @@ void read_linedefs(map_t *map, const lump_t *lump) {
     map->linedefs[j].flags         = READ_I16(lump->data, i + 4);
     map->linedefs[j].front_sidedef = READ_I16(lump->data, i + 10);
     map->linedefs[j].back_sidedef  = READ_I16(lump->data, i + 12);
+  }
+}
+
+void read_things(map_t *map, const lump_t *lump) {
+  map->num_things = lump->size / 10; // each thing is 10 bytes
+  map->things     = malloc(sizeof(thing_t) * map->num_things);
+
+  for (int i = 0, j = 0; i < lump->size; i += 10, j++) {
+    map->things[j].position.x = (int16_t)READ_I16(lump->data, i);
+    map->things[j].position.y = (int16_t)READ_I16(lump->data, i + 2);
+    map->things[j].type       = READ_I16(lump->data, i + 6);
+
+    float angle          = (int16_t)READ_I16(lump->data, i + 4);
+    map->things[j].angle = angle * M_PI / 180.f + M_PI;
   }
 }
 

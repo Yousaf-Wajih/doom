@@ -15,6 +15,7 @@
 #include "wall_texture.h"
 
 #include <math.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -51,12 +52,6 @@ static vec2_t   last_mouse;
 static draw_list_t *draw_list;
 
 void engine_init(wad_t *wad, const char *mapname) {
-  camera = (camera_t){
-      .position = {0.f, 0.f, 300.f},
-      .yaw      = M_PI_2,
-      .pitch    = 0.f,
-  };
-
   vec2_t size       = renderer_get_size();
   mat4_t projection = mat4_perspective(FOV, size.x / size.y, .1f, 10000.f);
   renderer_set_projection(projection);
@@ -101,6 +96,29 @@ void engine_init(wad_t *wad, const char *mapname) {
     return;
   }
 
+  for (int i = 0; i < map.num_things; i++) {
+    thing_t *thing = &map.things[i];
+
+    if (thing->type == THING_P1_START) {
+      thing_info_t *info = NULL;
+
+      for (int i = 0; i < map_num_thing_infos; i++) {
+        if (thing->type == map_thing_info[i].type) {
+          info = &map_thing_info[i];
+          break;
+        }
+      }
+
+      if (info == NULL) { continue; }
+
+      camera = (camera_t){
+          .position = {thing->position.x, info->height, -thing->position.y},
+          .yaw      = thing->angle,
+          .pitch    = 0.f,
+      };
+    }
+  }
+
   generate_meshes(&map, &gl_map);
 }
 
@@ -110,27 +128,37 @@ void engine_update(float dt) {
   float speed =
       (is_button_pressed(KEY_LSHIFT) ? PLAYER_SPEED * 2.f : PLAYER_SPEED) * dt;
 
-  if (is_button_pressed(KEY_W)) {
-    camera.position =
-        vec3_add(camera.position, vec3_scale(camera.forward, speed));
+  vec3_t forward = camera.forward, right = camera.right;
+  forward.y = right.y = 0.f;
+  forward = vec3_normalize(forward), right = vec3_normalize(right);
+
+  if (is_button_pressed(KEY_W) || is_button_pressed(KEY_UP)) {
+    camera.position = vec3_add(camera.position, vec3_scale(forward, speed));
   }
-  if (is_button_pressed(KEY_S)) {
-    camera.position =
-        vec3_add(camera.position, vec3_scale(camera.forward, -speed));
+  if (is_button_pressed(KEY_S) || is_button_pressed(KEY_DOWN)) {
+    camera.position = vec3_add(camera.position, vec3_scale(forward, -speed));
   }
   if (is_button_pressed(KEY_D)) {
-    camera.position =
-        vec3_add(camera.position, vec3_scale(camera.right, speed));
+    camera.position = vec3_add(camera.position, vec3_scale(right, speed));
   }
   if (is_button_pressed(KEY_A)) {
-    camera.position =
-        vec3_add(camera.position, vec3_scale(camera.right, -speed));
+    camera.position = vec3_add(camera.position, vec3_scale(right, -speed));
   }
 
-  if (is_button_pressed(MOUSE_RIGHT)) {
-    if (!is_mouse_captured()) {
+  float turn_speed = 4.f * dt;
+  if (is_button_pressed(KEY_RIGHT)) { camera.yaw += turn_speed; }
+  if (is_button_pressed(KEY_LEFT)) { camera.yaw -= turn_speed; }
+
+  if (is_button_pressed(KEY_ESCAPE)) { set_mouse_captured(0); }
+  if (is_button_pressed(MOUSE_RIGHT)) { set_mouse_captured(1); }
+
+  if (is_button_pressed(KEY_EQUAL)) { camera.pitch = 0.f; }
+
+  static bool is_first = true;
+  if (is_mouse_captured()) {
+    if (is_first) {
       last_mouse = get_mouse_position();
-      set_mouse_captured(1);
+      is_first   = false;
     }
 
     vec2_t current_mouse = get_mouse_position();
@@ -142,8 +170,8 @@ void engine_update(float dt) {
     camera.pitch += dy * MOUSE_SENSITIVITY * dt;
 
     camera.pitch = max(-M_PI_2 + 0.05, min(M_PI_2 - 0.05, camera.pitch));
-  } else if (is_mouse_captured()) {
-    set_mouse_captured(0);
+  } else {
+    is_first = true;
   }
 }
 
@@ -174,11 +202,13 @@ static void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
     *draw_node_ptr = ceil_node;
     draw_node_ptr  = &ceil_node->next;
 
-    sector_t       *sector         = NULL;
-    gl_subsector_t *subsector      = &gl_map->subsectors[i];
-    size_t          n_vertices     = subsector->num_segs;
-    vertex_t       *floor_vertices = malloc(sizeof(vertex_t) * n_vertices);
-    vertex_t       *ceil_vertices  = malloc(sizeof(vertex_t) * n_vertices);
+    sector_t       *sector     = NULL;
+    gl_subsector_t *subsector  = &gl_map->subsectors[i];
+    size_t          n_vertices = subsector->num_segs;
+    if (n_vertices < 3) { continue; }
+
+    vertex_t *floor_vertices = malloc(sizeof(vertex_t) * n_vertices);
+    vertex_t *ceil_vertices  = malloc(sizeof(vertex_t) * n_vertices);
 
     for (int j = 0; j < subsector->num_segs; j++) {
       gl_segment_t *segment = &gl_map->segments[j + subsector->first_seg];

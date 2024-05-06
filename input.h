@@ -59,6 +59,10 @@ typedef enum button {
   KEY_TILDE,
   KEY_ESCAPE,
   KEY_LSHIFT,
+  KEY_UP,
+  KEY_LEFT,
+  KEY_RIGHT,
+  KEY_DOWN,
 
   MOUSE_LEFT,
   MOUSE_RIGHT,

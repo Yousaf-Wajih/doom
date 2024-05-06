@@ -53,8 +53,12 @@ const int key_mapping[GLFW_KEY_LAST + 1] = {
     [GLFW_KEY_RIGHT_BRACKET] = KEY_RBRACKET,
     [GLFW_KEY_GRAVE_ACCENT]  = KEY_GRAVE_ACCENT,
     [GLFW_KEY_WORLD_1]       = KEY_TILDE,
-    [GLFW_KEY_WORLD_2]       = KEY_ESCAPE,
+    [GLFW_KEY_ESCAPE]        = KEY_ESCAPE,
     [GLFW_KEY_LEFT_SHIFT]    = KEY_LSHIFT,
+    [GLFW_KEY_UP]            = KEY_UP,
+    [GLFW_KEY_DOWN]          = KEY_DOWN,
+    [GLFW_KEY_LEFT]          = KEY_LEFT,
+    [GLFW_KEY_RIGHT]         = KEY_RIGHT,
 };
 
 const int mouse_mapping[GLFW_MOUSE_BUTTON_LAST + 1] = {
