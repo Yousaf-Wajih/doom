@@ -38,4 +38,9 @@ patch_t    *wad_read_patches(size_t *num, const wad_t *wad);
 wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
                               const wad_t *wad);
 
+void wad_free_map(map_t *map);
+void wad_free_gl_map(gl_map_t *map);
+void wad_free_patches(patch_t *patches, size_t num);
+void wad_free_wall_textures(wall_tex_t *textures, size_t num);
+
 #endif // !_WAD_H

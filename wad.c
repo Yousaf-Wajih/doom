@@ -159,6 +159,13 @@ patch_t *wad_read_patches(size_t *num, const wad_t *wad) {
   return patches;
 }
 
+void wad_free_patches(patch_t *patches, size_t num) {
+  for (int i = 0; i < num; i++) {
+    patches[i].width = patches[i].height = 0;
+    free(patches[i].data);
+  }
+}
+
 wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
                               const wad_t *wad) {
   size_t   num_patches;
@@ -199,7 +206,15 @@ wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,
     }
   }
 
+  wad_free_patches(patches, num_patches);
   return textures;
+}
+
+void wad_free_wall_textures(wall_tex_t *textures, size_t num) {
+  for (int i = 0; i < num; i++) {
+    textures[i].width = textures[i].height = 0;
+    free(textures[i].data);
+  }
 }
 
 #define THINGS_IDX   1
@@ -230,6 +245,17 @@ int wad_read_map(const char *mapname, map_t *map, const wad_t *wad,
   read_sectors(map, &wad->lumps[map_index + SECTORS_IDX], wad);
 
   return 0;
+}
+
+void wad_free_map(map_t *map) {
+  map->num_vertices = map->num_things = map->num_sectors = map->num_linedefs =
+      map->num_sidedefs                                  = 0;
+
+  free(map->vertices);
+  free(map->things);
+  free(map->sectors);
+  free(map->linedefs);
+  free(map->sidedefs);
 }
 
 void read_vertices(map_t *map, const lump_t *lump) {
@@ -349,6 +375,7 @@ void read_sectors(map_t *map, const lump_t *lump, const wad_t *wad) {
 static void read_gl_vertices(gl_map_t *map, const lump_t *lump);
 static void read_gl_segments(gl_map_t *map, const lump_t *lump);
 static void read_gl_subsectors(gl_map_t *map, const lump_t *lump);
+static void read_gl_nodes(gl_map_t *map, const lump_t *lump);
 
 int wad_read_gl_map(const char *gl_mapname, gl_map_t *map, const wad_t *wad) {
   int map_index = wad_find_lump(gl_mapname, wad);
@@ -367,6 +394,7 @@ int wad_read_gl_map(const char *gl_mapname, gl_map_t *map, const wad_t *wad) {
   read_gl_vertices(map, &wad->lumps[map_index + GL_VERTICES_IDX]);
   read_gl_segments(map, &wad->lumps[map_index + GL_SEGS_IDX]);
   read_gl_subsectors(map, &wad->lumps[map_index + GL_SSECTORS_IDX]);
+  read_gl_nodes(map, &wad->lumps[map_index + GL_NODES_IDX]);
 
   return 0;
 }
@@ -410,4 +438,25 @@ void read_gl_subsectors(gl_map_t *map, const lump_t *lump) {
     map->subsectors[j].num_segs  = READ_I16(lump->data, i);
     map->subsectors[j].first_seg = READ_I16(lump->data, i + 2);
   }
+}
+
+void read_gl_nodes(gl_map_t *map, const lump_t *lump) {
+  map->num_nodes = lump->size / 28; // each node is 28 bytes
+  map->nodes     = malloc(sizeof(gl_node_t) * map->num_nodes);
+
+  for (int i = 0, j = 0; i < lump->size; i += 28, j++) {
+    map->nodes[j].partition.x       = (int16_t)READ_I16(lump->data, i);
+    map->nodes[j].partition.y       = (int16_t)READ_I16(lump->data, i + 2);
+    map->nodes[j].delta_partition.x = (int16_t)READ_I16(lump->data, i + 4);
+    map->nodes[j].delta_partition.y = (int16_t)READ_I16(lump->data, i + 6);
+    map->nodes[j].front_child_id    = READ_I16(lump->data, i + 24);
+    map->nodes[j].back_child_id     = READ_I16(lump->data, i + 26);
+  }
+}
+
+void wad_free_gl_map(gl_map_t *map) {
+  map->num_vertices = map->num_segments = map->num_subsectors = 0;
+  free(map->vertices);
+  free(map->segments);
+  free(map->subsectors);
 }
