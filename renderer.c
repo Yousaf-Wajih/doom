@@ -18,10 +18,12 @@ const char *vertSrc =
     "layout (location = 2) in int texIndex;\n"
     "layout (location = 3) in int texType;\n"
     "layout (location = 4) in float light;\n"
+    "layout (location = 5) in vec2 maxTexCoords;\n"
     "out vec2 TexCoords;\n"
     "flat out int TexIndex;\n"
     "flat out int TexType;\n"
-    "out float Light;"
+    "flat out vec2 MaxTexCoords;"
+    "out float Light;\n"
     "uniform mat4 model;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
@@ -31,6 +33,7 @@ const char *vertSrc =
     "  TexType = texType;\n"
     "  TexCoords = texCoords;\n"
     "  Light = light;\n"
+    "  MaxTexCoords = maxTexCoords;\n"
     "}\n";
 
 const char *fragSrc =
@@ -38,10 +41,11 @@ const char *fragSrc =
     "in vec2 TexCoords;\n"
     "flat in int TexIndex;\n"
     "flat in int TexType;\n"
+    "flat in vec2 MaxTexCoords;"
     "in float Light;\n"
     "out vec4 fragColor;\n"
-    "uniform usampler2D tex;\n"
-    "uniform usampler2DArray tex_array;\n"
+    "uniform usampler2DArray flat_tex;\n"
+    "uniform usampler2DArray wall_tex;\n"
     "uniform sampler1D palette;\n"
     "void main() {\n"
     "  vec3 color;"
@@ -49,10 +53,12 @@ const char *fragSrc =
     "  else if (TexType == 0) {\n"
     "    color = vec3(texelFetch(palette, TexIndex, 0));\n"
     "  } else if (TexType == 1) {\n"
-    "    color = vec3(texelFetch(palette, int(texture(tex_array, "
+    "    color = vec3(texelFetch(palette, int(texture(flat_tex, "
     "                 vec3(TexCoords, TexIndex)).r), 0));\n"
     "  } else if (TexType == 2) {\n"
-    "   color = vec3(texelFetch(palette, int(texture(tex, TexCoords).r), 0));\n"
+    "    color = vec3(texelFetch(palette, int(texture(wall_tex, "
+    "                 vec3(fract(TexCoords / MaxTexCoords) * MaxTexCoords, "
+    "                             TexIndex)).r), 0));\n"
     "  }\n"
     "  fragColor = vec4(color * Light, 1.0);\n"
     "}\n";
@@ -90,12 +96,12 @@ void renderer_set_palette_texture(GLuint palette_texture) {
   glBindTexture(GL_TEXTURE_1D, palette_texture);
 }
 
-void renderer_set_draw_texture(GLuint texture) {
+void renderer_set_wall_texture(GLuint texture) {
   glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
 }
 
-void renderer_set_draw_texture_array(GLuint texture) {
+void renderer_set_flat_texture(GLuint texture) {
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
 }
@@ -125,10 +131,10 @@ static void init_shader() {
   GLuint palette_location = glGetUniformLocation(program, "palette");
   glUniform1i(palette_location, 0);
 
-  GLuint texture_array_location = glGetUniformLocation(program, "tex_array");
+  GLuint texture_array_location = glGetUniformLocation(program, "flat_tex");
   glUniform1i(texture_array_location, 1);
 
-  GLuint texture_location = glGetUniformLocation(program, "tex");
+  GLuint texture_location = glGetUniformLocation(program, "wall_tex");
   glUniform1i(texture_location, 2);
 }
 

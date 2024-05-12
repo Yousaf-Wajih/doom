@@ -114,6 +114,7 @@ flat_tex_t *wad_read_flats(size_t *num, const wad_t *wad) {
 }
 
 int wad_read_patch(patch_t *patch, const char *patch_name, const wad_t *wad) {
+  *patch             = (patch_t){0};
   int patch_lump_idx = wad_find_lump(patch_name, wad);
   if (patch_lump_idx < 0) { return 1; }
   lump_t *patch_lump = &wad->lumps[patch_lump_idx];

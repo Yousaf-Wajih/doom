@@ -2,7 +2,6 @@
 #include "camera.h"
 #include "dynarray.h"
 #include "flat_texture.h"
-#include "gl_helpers.h"
 #include "gl_map.h"
 #include "input.h"
 #include "map.h"
@@ -46,7 +45,8 @@ static wall_tex_info_t *wall_textures_info;
 static size_t           num_flats, num_wall_textures;
 static int              sky_flat;
 static GLuint           flat_texture_array;
-static GLuint          *wall_textures;
+static GLuint           wall_texture_array;
+static vec2_t          *wall_max_coords;
 
 static camera_t camera;
 static vec2_t   last_mouse;
@@ -86,14 +86,14 @@ void engine_init(wad_t *wad, const char *mapname) {
   free(flats);
 
   wall_tex_t *textures = wad_read_textures(&num_wall_textures, "TEXTURE1", wad);
-  wall_textures        = malloc(sizeof(GLuint) * num_wall_textures);
   wall_textures_info   = malloc(sizeof(wall_tex_info_t) * num_wall_textures);
+  wall_max_coords      = malloc(sizeof(vec2_t) * num_wall_textures);
   for (int i = 0; i < num_wall_textures; i++) {
-    wall_textures[i] = generate_texture(textures[i].width, textures[i].height,
-                                        textures[i].data);
     wall_textures_info[i] =
         (wall_tex_info_t){textures[i].width, textures[i].height};
   }
+  wall_texture_array =
+      generate_wall_texture_array(textures, num_wall_textures, wall_max_coords);
   wad_free_wall_textures(textures, num_wall_textures);
 
   if (wad_read_map(mapname, &map, wad, textures, num_wall_textures) != 0) {
@@ -127,6 +127,9 @@ void engine_init(wad_t *wad, const char *mapname) {
   }
 
   generate_meshes(&map, &gl_map);
+
+  renderer_set_flat_texture(flat_texture_array);
+  renderer_set_wall_texture(wall_texture_array);
 }
 
 void engine_update(float dt) {
@@ -191,9 +194,7 @@ void engine_render() {
       camera.position, vec3_add(camera.position, camera.forward), camera.up);
   renderer_set_view(view);
 
-  renderer_set_draw_texture_array(flat_texture_array);
   for (draw_node_t *node = draw_list; node != NULL; node = node->next) {
-    if (node->texture != -1) { renderer_set_draw_texture(node->texture); }
     renderer_draw_mesh(&node->mesh, mat4_identity());
   }
 }
@@ -376,18 +377,20 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         float tx0 = x_off, ty0 = y_off + h;
         float tx1 = x_off + w, ty1 = y_off;
 
+        vec2_t max_coords = wall_max_coords[sidedef->lower];
+        tx0 *= max_coords.x, tx1 *= max_coords.x;
+        ty0 *= max_coords.y, ty1 *= max_coords.y;
+
+        float    light      = front_sector->light_level / 256.f;
         vertex_t vertices[] = {
-            {p0, {tx0, ty0}, 0, 2, front_sector->light_level / 256.f},
-            {p1, {tx1, ty0}, 0, 2, front_sector->light_level / 256.f},
-            {p2, {tx1, ty1}, 0, 2, front_sector->light_level / 256.f},
-            {p3, {tx0, ty1}, 0, 2, front_sector->light_level / 256.f},
+            {p0, {tx0, ty0}, sidedef->lower, 2, light, max_coords},
+            {p1, {tx1, ty0}, sidedef->lower, 2, light, max_coords},
+            {p2, {tx1, ty1}, sidedef->lower, 2, light, max_coords},
+            {p3, {tx0, ty1}, sidedef->lower, 2, light, max_coords},
         };
 
         mesh_create(&floor_node->mesh, 4, vertices, 6, quad_indices);
         floor_node->sector = front_sector;
-        if (sidedef->lower >= 0) {
-          floor_node->texture = wall_textures[sidedef->lower];
-        }
       }
 
       *draw_node_ptr = floor_node;
@@ -420,18 +423,20 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         float tx0 = x_off, ty0 = y_off + h;
         float tx1 = x_off + w, ty1 = y_off;
 
+        vec2_t max_coords = wall_max_coords[sidedef->upper];
+        tx0 *= max_coords.x, tx1 *= max_coords.x;
+        ty0 *= max_coords.y, ty1 *= max_coords.y;
+
+        float    light      = front_sector->light_level / 256.f;
         vertex_t vertices[] = {
-            {p0, {tx0, ty0}, 0, 2, front_sector->light_level / 256.f},
-            {p1, {tx1, ty0}, 0, 2, front_sector->light_level / 256.f},
-            {p2, {tx1, ty1}, 0, 2, front_sector->light_level / 256.f},
-            {p3, {tx0, ty1}, 0, 2, front_sector->light_level / 256.f},
+            {p0, {tx0, ty0}, sidedef->upper, 2, light, max_coords},
+            {p1, {tx1, ty0}, sidedef->upper, 2, light, max_coords},
+            {p2, {tx1, ty1}, sidedef->upper, 2, light, max_coords},
+            {p3, {tx0, ty1}, sidedef->upper, 2, light, max_coords},
         };
 
         mesh_create(&ceil_node->mesh, 4, vertices, 6, quad_indices);
         ceil_node->sector = front_sector;
-        if (sidedef->upper >= 0) {
-          ceil_node->texture = wall_textures[sidedef->upper];
-        }
       }
 
       *draw_node_ptr = ceil_node;
@@ -464,16 +469,20 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       float tx0 = x_off, ty0 = y_off + h;
       float tx1 = x_off + w, ty1 = y_off;
 
+      vec2_t max_coords = wall_max_coords[sidedef->middle];
+      tx0 *= max_coords.x, tx1 *= max_coords.x;
+      ty0 *= max_coords.y, ty1 *= max_coords.y;
+
+      float    light      = sector->light_level / 256.f;
       vertex_t vertices[] = {
-          {p0, {tx0, ty0}, 0, 2, sector->light_level / 256.f},
-          {p1, {tx1, ty0}, 0, 2, sector->light_level / 256.f},
-          {p2, {tx1, ty1}, 0, 2, sector->light_level / 256.f},
-          {p3, {tx0, ty1}, 0, 2, sector->light_level / 256.f},
+          {p0, {tx0, ty0}, sidedef->middle, 2, light, max_coords},
+          {p1, {tx1, ty0}, sidedef->middle, 2, light, max_coords},
+          {p2, {tx1, ty1}, sidedef->middle, 2, light, max_coords},
+          {p3, {tx0, ty1}, sidedef->middle, 2, light, max_coords},
       };
 
       mesh_create(&node->mesh, 4, vertices, 6, quad_indices);
-      node->texture = wall_textures[sidedef->middle];
-      node->sector  = sector;
+      node->sector = sector;
 
       *draw_node_ptr = node;
       draw_node_ptr  = &node->next;
