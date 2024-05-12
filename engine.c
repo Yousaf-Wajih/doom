@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "camera.h"
+#include "dynarray.h"
 #include "flat_texture.h"
 #include "gl_helpers.h"
 #include "gl_map.h"
@@ -233,19 +234,18 @@ sector_t *map_get_sector(map_t *map, gl_map_t *gl_map, vec2_t position) {
 
 void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
   draw_node_t **draw_node_ptr = &draw_list;
+
+  draw_node_t *flats_node = malloc(sizeof(draw_node_t));
+  flats_node->next        = NULL;
+  flats_node->texture     = -1;
+
+  vertexarray_t vertices;
+  indexarray_t  indices;
+  dynarray_init(vertices, 0);
+  dynarray_init(indices, 0);
+
+  int start_idx = 0;
   for (int i = 0; i < gl_map->num_subsectors; i++) {
-    draw_node_t *floor_node = malloc(sizeof(draw_node_t));
-    floor_node->next        = NULL;
-
-    *draw_node_ptr = floor_node;
-    draw_node_ptr  = &floor_node->next;
-
-    draw_node_t *ceil_node = malloc(sizeof(draw_node_t));
-    ceil_node->next        = NULL;
-
-    *draw_node_ptr = ceil_node;
-    draw_node_ptr  = &ceil_node->next;
-
     sector_t       *sector     = NULL;
     gl_subsector_t *subsector  = &gl_map->subsectors[i];
     size_t          n_vertices = subsector->num_segs;
@@ -298,29 +298,41 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
           sector->light_level / 256.f;
     }
 
-    // Triangulation will form (n - 2) triangles, so 3*(n - 3) indices are
-    // required
-    size_t    n_indices = 3 * (n_vertices - 2);
-    uint32_t *indices   = malloc(sizeof(uint32_t) * n_indices);
-    for (int j = 0, k = 1; j < n_indices; j += 3, k++) {
-      indices[j]     = 0;
-      indices[j + 1] = k;
-      indices[j + 2] = k + 1;
+    for (int i = 0; i < n_vertices; i++) {
+      dynarray_push(vertices, floor_vertices[i]);
     }
 
-    floor_node->texture = ceil_node->texture = -1;
-    floor_node->sector = ceil_node->sector = sector;
-    mesh_create(&floor_node->mesh, n_vertices, floor_vertices, n_indices,
-                indices);
-    mesh_create(&ceil_node->mesh, n_vertices, ceil_vertices, n_indices,
-                indices);
+    int ceil_start_idx = vertices.count;
+    for (int i = 0; i < n_vertices; i++) {
+      dynarray_push(vertices, ceil_vertices[i]);
+    }
 
+    // Triangulation will form (n - 2) triangles, so 2*3*(n - 3) indices are
+    // required
+    for (int j = 0, k = 1; j < n_vertices - 2; j++, k++) {
+      dynarray_push(indices, start_idx);
+      dynarray_push(indices, start_idx + k);
+      dynarray_push(indices, start_idx + k + 1);
+
+      dynarray_push(indices, ceil_start_idx);
+      dynarray_push(indices, ceil_start_idx + k);
+      dynarray_push(indices, ceil_start_idx + k + 1);
+    }
+
+    start_idx = vertices.count;
     free(floor_vertices);
     free(ceil_vertices);
-    free(indices);
   }
 
-  uint32_t indices[] = {
+  mesh_create(&flats_node->mesh, vertices.count, vertices.data, indices.count,
+              indices.data);
+  *draw_node_ptr = flats_node;
+  draw_node_ptr  = &flats_node->next;
+
+  dynarray_free(vertices);
+  dynarray_free(indices);
+
+  uint32_t quad_indices[] = {
       0, 1, 3, // 1st triangle
       1, 2, 3, // 2nd triangle
   };
@@ -371,7 +383,7 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
             {p3, {tx0, ty1}, 0, 2, front_sector->light_level / 256.f},
         };
 
-        mesh_create(&floor_node->mesh, 4, vertices, 6, indices);
+        mesh_create(&floor_node->mesh, 4, vertices, 6, quad_indices);
         floor_node->sector = front_sector;
         if (sidedef->lower >= 0) {
           floor_node->texture = wall_textures[sidedef->lower];
@@ -415,7 +427,7 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
             {p3, {tx0, ty1}, 0, 2, front_sector->light_level / 256.f},
         };
 
-        mesh_create(&ceil_node->mesh, 4, vertices, 6, indices);
+        mesh_create(&ceil_node->mesh, 4, vertices, 6, quad_indices);
         ceil_node->sector = front_sector;
         if (sidedef->upper >= 0) {
           ceil_node->texture = wall_textures[sidedef->upper];
@@ -459,7 +471,7 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
           {p3, {tx0, ty1}, 0, 2, sector->light_level / 256.f},
       };
 
-      mesh_create(&node->mesh, 4, vertices, 6, indices);
+      mesh_create(&node->mesh, 4, vertices, 6, quad_indices);
       node->texture = wall_textures[sidedef->middle];
       node->sector  = sector;
 

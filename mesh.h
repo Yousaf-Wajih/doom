@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "dynarray.h"
 #include "vector.h"
 
 typedef struct mesh {
@@ -22,5 +23,8 @@ typedef struct vertex {
 
 void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,
                  size_t num_indices, uint32_t *indices);
+
+typedef dynarray(vertex_t) vertexarray_t;
+typedef dynarray(uint32_t) indexarray_t;
 
 #endif // !_MESH_H
