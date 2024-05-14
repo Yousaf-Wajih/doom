@@ -338,23 +338,37 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       1, 2, 3, // 2nd triangle
   };
 
-  for (int i = 0; i < map->num_linedefs; i++) {
-    linedef_t *linedef = &map->linedefs[i];
+  for (int i = 0; i < gl_map->num_segments; i++) {
+    gl_segment_t *segment = &gl_map->segments[i];
+    if (segment->linedef == 0xffff) { continue; }
+
+    linedef_t *linedef       = &map->linedefs[segment->linedef];
+    sidedef_t *front_sidedef = &map->sidedefs[linedef->front_sidedef];
+    sidedef_t *back_sidedef  = &map->sidedefs[linedef->back_sidedef];
+
+    // if (segment->side) {
+    //   sidedef_t *tmp = front_sidedef;
+    //   front_sidedef  = back_sidedef;
+    //   back_sidedef   = tmp;
+    // }
+
+    sector_t *front_sector = &map->sectors[front_sidedef->sector_idx];
+    sector_t *back_sector  = &map->sectors[back_sidedef->sector_idx];
+
+    sidedef_t *sidedef = front_sidedef;
+    sector_t  *sector  = front_sector;
+
+    // if (segment->start_vertex & VERT_IS_GL ||
+    //     segment->end_vertex & VERT_IS_GL) {
+    //   continue;
+    // }
 
     if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
       draw_node_t *floor_node = malloc(sizeof(draw_node_t));
       floor_node->next        = NULL;
 
-      vec2_t start = map->vertices[linedef->start_idx];
-      vec2_t end   = map->vertices[linedef->end_idx];
-
-      sidedef_t *front_sidedef = &map->sidedefs[linedef->front_sidedef];
-      sector_t  *front_sector  = &map->sectors[front_sidedef->sector_idx];
-
-      sidedef_t *back_sidedef = &map->sidedefs[linedef->back_sidedef];
-      sector_t  *back_sector  = &map->sectors[back_sidedef->sector_idx];
-
-      sidedef_t *sidedef = front_sidedef;
+      vec2_t start = map->vertices[segment->start_vertex];
+      vec2_t end   = map->vertices[segment->end_vertex];
 
       {
         vec3_t p0 = {start.x, front_sector->floor, -start.y};
@@ -381,7 +395,7 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         tx0 *= max_coords.x, tx1 *= max_coords.x;
         ty0 *= max_coords.y, ty1 *= max_coords.y;
 
-        float    light      = front_sector->light_level / 256.f;
+        float    light      = sector->light_level / 256.f;
         vertex_t vertices[] = {
             {p0, {tx0, ty0}, sidedef->lower, 2, light, max_coords},
             {p1, {tx1, ty0}, sidedef->lower, 2, light, max_coords},
@@ -427,7 +441,7 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         tx0 *= max_coords.x, tx1 *= max_coords.x;
         ty0 *= max_coords.y, ty1 *= max_coords.y;
 
-        float    light      = front_sector->light_level / 256.f;
+        float    light      = sector->light_level / 256.f;
         vertex_t vertices[] = {
             {p0, {tx0, ty0}, sidedef->upper, 2, light, max_coords},
             {p1, {tx1, ty0}, sidedef->upper, 2, light, max_coords},
@@ -447,9 +461,6 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
 
       vec2_t start = map->vertices[linedef->start_idx];
       vec2_t end   = map->vertices[linedef->end_idx];
-
-      sidedef_t *sidedef = &map->sidedefs[linedef->front_sidedef];
-      sector_t  *sector  = &map->sectors[sidedef->sector_idx];
 
       vec3_t p0 = {start.x, sector->floor, -start.y};
       vec3_t p1 = {end.x, sector->floor, -end.y};
