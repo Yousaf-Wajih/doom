@@ -29,7 +29,6 @@
 typedef struct draw_node {
   int               texture;
   mesh_t            mesh;
-  const sector_t   *sector;
   struct draw_node *next;
 } draw_node_t, draw_list_t;
 
@@ -342,25 +341,45 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       1, 2, 3, // 2nd triangle
   };
 
-  for (int i = 0; i < map->num_linedefs; i++) {
-    linedef_t *linedef = &map->linedefs[i];
+  for (int i = 0; i < gl_map->num_segments; i++) {
+    gl_segment_t *segment = &gl_map->segments[i];
+    if (segment->linedef == 0xffff) { continue; }
+
+    linedef_t *linedef = &map->linedefs[segment->linedef];
+
+    vec2_t start, end;
+    if (segment->start_vertex & VERT_IS_GL) {
+      start = gl_map->vertices[segment->start_vertex & 0x7fff];
+    } else {
+      start = map->vertices[segment->start_vertex];
+    }
+
+    if (segment->end_vertex & VERT_IS_GL) {
+      end = gl_map->vertices[segment->end_vertex & 0x7fff];
+    } else {
+      end = map->vertices[segment->end_vertex];
+    }
+
+    sidedef_t *front_sidedef = &map->sidedefs[linedef->front_sidedef];
+    sidedef_t *back_sidedef  = &map->sidedefs[linedef->back_sidedef];
+
+    if (segment->side) {
+      sidedef_t *tmp = front_sidedef;
+      front_sidedef  = back_sidedef;
+      back_sidedef   = tmp;
+    }
+
+    sector_t *front_sector = &map->sectors[front_sidedef->sector_idx];
+    sector_t *back_sector  = &map->sectors[back_sidedef->sector_idx];
+
+    sidedef_t *sidedef = front_sidedef;
+    sector_t  *sector  = front_sector;
 
     if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
-      draw_node_t *floor_node = malloc(sizeof(draw_node_t));
-      floor_node->next        = NULL;
+      if (sidedef->lower >= 0) {
+        draw_node_t *floor_node = malloc(sizeof(draw_node_t));
+        floor_node->next        = NULL;
 
-      vec2_t start = map->vertices[linedef->start_idx];
-      vec2_t end   = map->vertices[linedef->end_idx];
-
-      sidedef_t *front_sidedef = &map->sidedefs[linedef->front_sidedef];
-      sector_t  *front_sector  = &map->sectors[front_sidedef->sector_idx];
-
-      sidedef_t *back_sidedef = &map->sidedefs[linedef->back_sidedef];
-      sector_t  *back_sector  = &map->sectors[back_sidedef->sector_idx];
-
-      sidedef_t *sidedef = front_sidedef;
-
-      {
         vec3_t p0 = {start.x, front_sector->floor, -start.y};
         vec3_t p1 = {end.x, front_sector->floor, -end.y};
         vec3_t p2 = {end.x, back_sector->floor, -end.y};
@@ -394,21 +413,15 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         };
 
         mesh_create(&floor_node->mesh, 4, vertices, 6, quad_indices);
-        floor_node->sector = front_sector;
+        *draw_node_ptr = floor_node;
+        draw_node_ptr  = &floor_node->next;
       }
 
-      *draw_node_ptr = floor_node;
-      draw_node_ptr  = &floor_node->next;
+      if (sidedef->upper >= 0 && !(front_sector->ceiling_tex == sky_flat &&
+                                   back_sector->ceiling_tex == sky_flat)) {
+        draw_node_t *ceil_node = malloc(sizeof(draw_node_t));
+        ceil_node->next        = NULL;
 
-      if (front_sector->ceiling_tex == sky_flat &&
-          back_sector->ceiling_tex == sky_flat) {
-        continue;
-      }
-
-      draw_node_t *ceil_node = malloc(sizeof(draw_node_t));
-      ceil_node->next        = NULL;
-
-      {
         vec3_t p0 = {start.x, front_sector->ceiling, -start.y};
         vec3_t p1 = {end.x, front_sector->ceiling, -end.y};
         vec3_t p2 = {end.x, back_sector->ceiling, -end.y};
@@ -440,20 +453,12 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         };
 
         mesh_create(&ceil_node->mesh, 4, vertices, 6, quad_indices);
-        ceil_node->sector = front_sector;
+        *draw_node_ptr = ceil_node;
+        draw_node_ptr  = &ceil_node->next;
       }
-
-      *draw_node_ptr = ceil_node;
-      draw_node_ptr  = &ceil_node->next;
-    } else {
+    } else if (sidedef->middle >= 0) {
       draw_node_t *node = malloc(sizeof(draw_node_t));
       node->next        = NULL;
-
-      vec2_t start = map->vertices[linedef->start_idx];
-      vec2_t end   = map->vertices[linedef->end_idx];
-
-      sidedef_t *sidedef = &map->sidedefs[linedef->front_sidedef];
-      sector_t  *sector  = &map->sectors[sidedef->sector_idx];
 
       vec3_t p0 = {start.x, sector->floor, -start.y};
       vec3_t p1 = {end.x, sector->floor, -end.y};
@@ -486,8 +491,6 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
       };
 
       mesh_create(&node->mesh, 4, vertices, 6, quad_indices);
-      node->sector = sector;
-
       *draw_node_ptr = node;
       draw_node_ptr  = &node->next;
     }
