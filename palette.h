@@ -10,6 +10,6 @@ typedef struct palette {
   uint8_t colors[NUM_COLORS * 3];
 } palette_t;
 
-GLuint palette_generate_texture(const palette_t *palette);
+GLuint palettes_generate_texture(const palette_t *palettes, size_t num);
 
 #endif // !_PALETTE_H

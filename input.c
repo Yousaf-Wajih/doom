@@ -2,6 +2,7 @@
 #include "vector.h"
 
 #include <GLFW/glfw3.h>
+#include <string.h>
 
 const int key_mapping[GLFW_KEY_LAST + 1] = {
     [GLFW_KEY_SPACE]         = KEY_SPACE,
@@ -69,10 +70,18 @@ const int mouse_mapping[GLFW_MOUSE_BUTTON_LAST + 1] = {
 
 static GLFWwindow *window;
 static vec2_t      mouse_position;
-static int         buttons[BUTTON_COUNT];
+static int         buttons[BUTTON_COUNT], previous_buttons[BUTTON_COUNT];
 
 int is_button_pressed(button_t button) {
   if (button >= 0 && button < BUTTON_COUNT) { return buttons[button]; }
+  return 0;
+}
+
+int is_button_just_pressed(button_t button) {
+  if (button >= 0 && button < BUTTON_COUNT) {
+    return buttons[button] && !previous_buttons[button];
+  }
+
   return 0;
 }
 
@@ -89,6 +98,10 @@ void set_mouse_captured(int is_mouse_captured) {
 }
 
 void input_init(GLFWwindow *win) { window = win; }
+
+void input_tick() {
+  memcpy(previous_buttons, buttons, BUTTON_COUNT * sizeof(int));
+}
 
 void input_key_callback(GLFWwindow *window, int key, int scancode, int action,
                         int mods) {

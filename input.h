@@ -72,11 +72,13 @@ typedef enum button {
 } button_t;
 
 int    is_button_pressed(button_t button);
+int    is_button_just_pressed(button_t button);
 vec2_t get_mouse_position();
 int    is_mouse_captured();
 void   set_mouse_captured(int is_mouse_captured);
 
 void input_init(GLFWwindow *window);
+void input_tick();
 void input_key_callback(GLFWwindow *window, int key, int scancode, int action,
                         int mods);
 void input_mouse_button_callback(GLFWwindow *window, int button, int action,

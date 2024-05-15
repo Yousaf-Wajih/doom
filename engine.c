@@ -40,20 +40,17 @@ typedef struct wall_tex_info {
 static void      generate_meshes(const map_t *map, const gl_map_t *gl_map);
 static sector_t *map_get_sector(map_t *map, gl_map_t *gl_map, vec2_t position);
 
-static palette_t        palette;
+static size_t           num_flats, num_wall_textures, num_palettes;
 static wall_tex_info_t *wall_textures_info;
-static size_t           num_flats, num_wall_textures;
-static int              sky_flat;
-static GLuint           flat_texture_array;
-static GLuint           wall_texture_array;
 static vec2_t          *wall_max_coords;
 
 static camera_t camera;
 static vec2_t   last_mouse;
 
-static float    player_height;
 static map_t    map;
 static gl_map_t gl_map;
+static float    player_height;
+static int      sky_flat;
 
 static draw_list_t *draw_list;
 
@@ -75,14 +72,13 @@ void engine_init(wad_t *wad, const char *mapname) {
     return;
   }
 
-  wad_read_playpal(&palette, wad);
-  GLuint palette_texture = palette_generate_texture(&palette);
-  renderer_set_palette_texture(palette_texture);
+  palette_t *palettes    = wad_read_playpal(&num_palettes, wad);
+  GLuint palette_texture = palettes_generate_texture(palettes, num_palettes);
 
   sky_flat = wad_find_lump("F_SKY1", wad) - wad_find_lump("F_START", wad) - 1;
 
-  flat_tex_t *flats  = wad_read_flats(&num_flats, wad);
-  flat_texture_array = generate_flat_texture_array(flats, num_flats);
+  flat_tex_t *flats         = wad_read_flats(&num_flats, wad);
+  GLuint flat_texture_array = generate_flat_texture_array(flats, num_flats);
   free(flats);
 
   wall_tex_t *textures = wad_read_textures(&num_wall_textures, "TEXTURE1", wad);
@@ -92,7 +88,7 @@ void engine_init(wad_t *wad, const char *mapname) {
     wall_textures_info[i] =
         (wall_tex_info_t){textures[i].width, textures[i].height};
   }
-  wall_texture_array =
+  GLuint wall_texture_array =
       generate_wall_texture_array(textures, num_wall_textures, wall_max_coords);
   wad_free_wall_textures(textures, num_wall_textures);
 
@@ -130,9 +126,16 @@ void engine_init(wad_t *wad, const char *mapname) {
 
   renderer_set_flat_texture(flat_texture_array);
   renderer_set_wall_texture(wall_texture_array);
+  renderer_set_palette_texture(palette_texture);
 }
 
-void engine_update(float dt) {
+static int palette_index = 0;
+void       engine_update(float dt) {
+  if (is_button_just_pressed(KEY_O)) { palette_index--; }
+  if (is_button_just_pressed(KEY_P)) { palette_index++; }
+
+  palette_index = min(max(palette_index, 0), num_palettes - 1);
+
   camera_update_direction_vectors(&camera);
 
   vec2_t    position = {camera.position.x, -camera.position.z};
@@ -194,6 +197,7 @@ void engine_render() {
       camera.position, vec3_add(camera.position, camera.forward), camera.up);
   renderer_set_view(view);
 
+  renderer_set_palette_index(palette_index);
   for (draw_node_t *node = draw_list; node != NULL; node = node->next) {
     renderer_draw_mesh(&node->mesh, mat4_identity());
   }

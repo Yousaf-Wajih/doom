@@ -32,7 +32,7 @@ int wad_read_map(const char *mapname, map_t *map, const wad_t *wad,
                  const wall_tex_t *tex, int num_tex);
 
 int wad_read_patch(patch_t *patch, const char *patch_name, const wad_t *wad);
-int wad_read_playpal(palette_t *palette, const wad_t *wad);
+palette_t  *wad_read_playpal(size_t *num, const wad_t *wad);
 flat_tex_t *wad_read_flats(size_t *num, const wad_t *wad);
 patch_t    *wad_read_patches(size_t *num, const wad_t *wad);
 wall_tex_t *wad_read_textures(size_t *num, const char *lumpname,

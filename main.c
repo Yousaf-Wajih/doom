@@ -50,11 +50,12 @@ int main(int argc, char **argv) {
     float delta = now - last;
     last        = now;
 
-    engine_update(delta);
-
+    input_tick();
     glfwPollEvents();
     snprintf(title, 128, "DooM | %.0f", 1.f / delta);
     glfwSetWindowTitle(window, title);
+
+    engine_update(delta);
 
     renderer_clear();
     engine_render();

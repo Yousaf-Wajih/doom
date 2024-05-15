@@ -46,19 +46,21 @@ const char *fragSrc =
     "out vec4 fragColor;\n"
     "uniform usampler2DArray flat_tex;\n"
     "uniform usampler2DArray wall_tex;\n"
-    "uniform sampler1D palette;\n"
+    "uniform sampler1DArray palettes;\n"
+    "uniform int palette_index;\n"
     "void main() {\n"
     "  vec3 color;"
     "  if (TexIndex == -1) { discard; }\n"
     "  else if (TexType == 0) {\n"
-    "    color = vec3(texelFetch(palette, TexIndex, 0));\n"
+    "    color = vec3(texelFetch(palettes, ivec2(TexIndex, palette_index), "
+    "             0));\n"
     "  } else if (TexType == 1) {\n"
-    "    color = vec3(texelFetch(palette, int(texture(flat_tex, "
-    "                 vec3(TexCoords, TexIndex)).r), 0));\n"
+    "    color = vec3(texelFetch(palettes, ivec2(int(texture(flat_tex, "
+    "                 vec3(TexCoords, TexIndex)).r), palette_index), 0));\n"
     "  } else if (TexType == 2) {\n"
-    "    color = vec3(texelFetch(palette, int(texture(wall_tex, "
+    "    color = vec3(texelFetch(palettes, ivec2(int(texture(wall_tex, "
     "                 vec3(fract(TexCoords / MaxTexCoords) * MaxTexCoords, "
-    "                             TexIndex)).r), 0));\n"
+    "                             TexIndex)).r), palette_index), 0));\n"
     "  }\n"
     "  fragColor = vec4(color * Light, 1.0);\n"
     "}\n";
@@ -67,7 +69,7 @@ static mesh_t quad_mesh;
 static float  width, height;
 static GLuint program;
 static GLuint model_location, view_location, projection_location;
-static GLuint color_location;
+static GLuint palette_index_location;
 
 void renderer_init(int w, int h) {
   width  = w;
@@ -93,7 +95,11 @@ void renderer_set_projection(mat4_t projection) {
 
 void renderer_set_palette_texture(GLuint palette_texture) {
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_1D, palette_texture);
+  glBindTexture(GL_TEXTURE_1D_ARRAY, palette_texture);
+}
+
+void renderer_set_palette_index(int index) {
+  glUniform1i(palette_index_location, index);
 }
 
 void renderer_set_wall_texture(GLuint texture) {
@@ -123,12 +129,12 @@ static void init_shader() {
 
   glUseProgram(program);
 
-  projection_location = glGetUniformLocation(program, "projection");
-  model_location      = glGetUniformLocation(program, "model");
-  view_location       = glGetUniformLocation(program, "view");
-  color_location      = glGetUniformLocation(program, "color");
+  projection_location    = glGetUniformLocation(program, "projection");
+  model_location         = glGetUniformLocation(program, "model");
+  view_location          = glGetUniformLocation(program, "view");
+  palette_index_location = glGetUniformLocation(program, "palette_index");
 
-  GLuint palette_location = glGetUniformLocation(program, "palette");
+  GLuint palette_location = glGetUniformLocation(program, "palettes");
   glUniform1i(palette_location, 0);
 
   GLuint texture_array_location = glGetUniformLocation(program, "flat_tex");
