@@ -315,8 +315,8 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
     // required
     for (int j = 0, k = 1; j < n_vertices - 2; j++, k++) {
       dynarray_push(indices, start_idx);
-      dynarray_push(indices, start_idx + k);
       dynarray_push(indices, start_idx + k + 1);
+      dynarray_push(indices, start_idx + k);
 
       dynarray_push(indices, ceil_start_idx);
       dynarray_push(indices, ceil_start_idx + k);
@@ -376,7 +376,7 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
     sector_t  *sector  = front_sector;
 
     if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
-      if (sidedef->lower >= 0) {
+      if (sidedef->lower >= 0 && front_sector->floor < back_sector->floor) {
         draw_node_t *floor_node = malloc(sizeof(draw_node_t));
         floor_node->next        = NULL;
 
@@ -417,15 +417,16 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         draw_node_ptr  = &floor_node->next;
       }
 
-      if (sidedef->upper >= 0 && !(front_sector->ceiling_tex == sky_flat &&
-                                   back_sector->ceiling_tex == sky_flat)) {
+      if (sidedef->upper >= 0 && front_sector->ceiling > back_sector->ceiling &&
+          !(front_sector->ceiling_tex == sky_flat &&
+            back_sector->ceiling_tex == sky_flat)) {
         draw_node_t *ceil_node = malloc(sizeof(draw_node_t));
         ceil_node->next        = NULL;
 
-        vec3_t p0 = {start.x, front_sector->ceiling, -start.y};
-        vec3_t p1 = {end.x, front_sector->ceiling, -end.y};
-        vec3_t p2 = {end.x, back_sector->ceiling, -end.y};
-        vec3_t p3 = {start.x, back_sector->ceiling, -start.y};
+        vec3_t p0 = {start.x, back_sector->ceiling, -start.y};
+        vec3_t p1 = {end.x, back_sector->ceiling, -end.y};
+        vec3_t p2 = {end.x, front_sector->ceiling, -end.y};
+        vec3_t p3 = {start.x, front_sector->ceiling, -start.y};
 
         const float x = p1.x - p0.x, y = p1.z - p0.z;
         const float width = sqrtf(x * x + y * y), height = -fabsf(p3.y - p0.y);
@@ -437,8 +438,8 @@ void generate_meshes(const map_t *map, const gl_map_t *gl_map) {
         float x_off = sidedef->x_off / tw, y_off = sidedef->y_off / th;
         if (linedef->flags & LINEDEF_FLAGS_UPPER_UNPEGGED) { y_off -= h; }
 
-        float tx0 = x_off, ty0 = y_off + h;
-        float tx1 = x_off + w, ty1 = y_off;
+        float tx0 = x_off, ty0 = y_off;
+        float tx1 = x_off + w, ty1 = y_off + h;
 
         vec2_t max_coords = wall_max_coords[sidedef->upper];
         tx0 *= max_coords.x, tx1 *= max_coords.x;

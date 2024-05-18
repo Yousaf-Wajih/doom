@@ -77,6 +77,7 @@ void renderer_init(int w, int h) {
 
   glClearColor(.1f, .1f, .1f, 1.f);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
 
   init_quad();
   init_shader();
