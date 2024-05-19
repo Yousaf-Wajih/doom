@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
   }
 
   renderer_init(WIDTH, HEIGHT);
-  engine_init(&wad, "E1M2");
+  engine_init(&wad, "E1M1");
 
   char  title[128];
   float last = 0.f;
