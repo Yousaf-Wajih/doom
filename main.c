@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WIDTH  1200
-#define HEIGHT 675
+#define WIDTH  1280
+#define HEIGHT 800
 
 int main(int argc, char **argv) {
   if (glfwInit() != GLFW_TRUE) {

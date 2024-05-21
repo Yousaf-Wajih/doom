@@ -116,7 +116,7 @@ void engine_init(wad_t *wad, const char *mapname) {
       player_height = info->height;
 
       camera = (camera_t){
-          .position = {thing->position.x, player_height, -thing->position.y},
+          .position = {thing->position.x, player_height, thing->position.y},
           .yaw      = thing->angle,
           .pitch    = 0.f,
       };
@@ -139,7 +139,7 @@ void       engine_update(float dt) {
 
   camera_update_direction_vectors(&camera);
 
-  vec2_t    position = {camera.position.x, -camera.position.z};
+  vec2_t    position = {camera.position.x, camera.position.z};
   sector_t *sector   = map_get_sector(&map, &gl_map, position);
   if (sector) { camera.position.y = sector->floor + player_height; }
 
@@ -164,8 +164,8 @@ void       engine_update(float dt) {
   }
 
   float turn_speed = 4.f * dt;
-  if (is_button_pressed(KEY_RIGHT)) { camera.yaw += turn_speed; }
-  if (is_button_pressed(KEY_LEFT)) { camera.yaw -= turn_speed; }
+  if (is_button_pressed(KEY_RIGHT)) { camera.yaw -= turn_speed; }
+  if (is_button_pressed(KEY_LEFT)) { camera.yaw += turn_speed; }
 
   if (is_button_pressed(KEY_ESCAPE)) { set_mouse_captured(0); }
   if (is_button_pressed(MOUSE_RIGHT)) { set_mouse_captured(1); }
@@ -184,7 +184,7 @@ void       engine_update(float dt) {
     float  dy            = last_mouse.y - current_mouse.y;
     last_mouse           = current_mouse;
 
-    camera.yaw += dx * MOUSE_SENSITIVITY * dt;
+    camera.yaw -= dx * MOUSE_SENSITIVITY * dt;
     camera.pitch += dy * MOUSE_SENSITIVITY * dt;
 
     camera.pitch = max(-M_PI_2 + 0.05, min(M_PI_2 - 0.05, camera.pitch));
@@ -297,9 +297,9 @@ void generate_node(draw_node_t **draw_node_ptr, size_t id, const map_t *map,
       }
 
       floor_vertices[j] = ceil_vertices[j] = (vertex_t){
-          .position     = {start.x, 0.f, -start.y},
+          .position     = {start.x, 0.f, start.y},
           .tex_coords   = {start.x / FLAT_TEXTURE_SIZE,
-                           -start.y / FLAT_TEXTURE_SIZE},
+                           start.y / FLAT_TEXTURE_SIZE},
           .texture_type = 1,
       };
 
@@ -323,10 +323,10 @@ void generate_node(draw_node_t **draw_node_ptr, size_t id, const map_t *map,
 
       if (linedef->flags & LINEDEF_FLAGS_TWO_SIDED) {
         if (sidedef->lower >= 0 && front_sector->floor < back_sector->floor) {
-          vec3_t p0 = {start.x, front_sector->floor, -start.y};
-          vec3_t p1 = {end.x, front_sector->floor, -end.y};
-          vec3_t p2 = {end.x, back_sector->floor, -end.y};
-          vec3_t p3 = {start.x, back_sector->floor, -start.y};
+          vec3_t p0 = {start.x, front_sector->floor, start.y};
+          vec3_t p1 = {end.x, front_sector->floor, end.y};
+          vec3_t p2 = {end.x, back_sector->floor, end.y};
+          vec3_t p3 = {start.x, back_sector->floor, start.y};
 
           const float x = p1.x - p0.x, y = p1.z - p0.z;
           const float width = sqrtf(x * x + y * y), height = fabsf(p3.y - p0.y);
@@ -372,10 +372,10 @@ void generate_node(draw_node_t **draw_node_ptr, size_t id, const map_t *map,
             front_sector->ceiling > back_sector->ceiling &&
             !(front_sector->ceiling_tex == sky_flat &&
               back_sector->ceiling_tex == sky_flat)) {
-          vec3_t p0 = {start.x, back_sector->ceiling, -start.y};
-          vec3_t p1 = {end.x, back_sector->ceiling, -end.y};
-          vec3_t p2 = {end.x, front_sector->ceiling, -end.y};
-          vec3_t p3 = {start.x, front_sector->ceiling, -start.y};
+          vec3_t p0 = {start.x, back_sector->ceiling, start.y};
+          vec3_t p1 = {end.x, back_sector->ceiling, end.y};
+          vec3_t p2 = {end.x, front_sector->ceiling, end.y};
+          vec3_t p3 = {start.x, front_sector->ceiling, start.y};
 
           const float x = p1.x - p0.x, y = p1.z - p0.z;
           const float width  = sqrtf(x * x + y * y),
@@ -416,10 +416,10 @@ void generate_node(draw_node_t **draw_node_ptr, size_t id, const map_t *map,
           dynarray_push(indices, start_idx + 3);
         }
       } else {
-        vec3_t p0 = {start.x, sector->floor, -start.y};
-        vec3_t p1 = {end.x, sector->floor, -end.y};
-        vec3_t p2 = {end.x, sector->ceiling, -end.y};
-        vec3_t p3 = {start.x, sector->ceiling, -start.y};
+        vec3_t p0 = {start.x, sector->floor, start.y};
+        vec3_t p1 = {end.x, sector->floor, end.y};
+        vec3_t p2 = {end.x, sector->ceiling, end.y};
+        vec3_t p3 = {start.x, sector->ceiling, start.y};
 
         const float x = p1.x - p0.x, y = p1.z - p0.z;
         const float width = sqrtf(x * x + y * y), height = p3.y - p0.y;

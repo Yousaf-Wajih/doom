@@ -21,6 +21,7 @@ typedef struct gl_segment {
 typedef struct gl_node {
   uint16_t front_child_id, back_child_id;
   vec2_t   partition, delta_partition;
+  int16_t  front_bbox[4], back_bbox[4];
 } gl_node_t;
 
 typedef struct gl_map {
