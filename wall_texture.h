@@ -17,4 +17,6 @@ GLuint generate_wall_texture_array(const wall_tex_t *textures,
                                    size_t            num_textures,
                                    vec2_t           *max_coords_array);
 
+GLuint generate_texture_cubemap(const wall_tex_t *texture);
+
 #endif // !_WALL_TEXTURE_H

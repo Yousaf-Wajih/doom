@@ -86,6 +86,10 @@ void engine_init(wad_t *wad, const char *mapname) {
   wall_textures_info   = malloc(sizeof(wall_tex_info_t) * num_wall_textures);
   wall_max_coords      = malloc(sizeof(vec2_t) * num_wall_textures);
   for (int i = 0; i < num_wall_textures; i++) {
+    if (strcmp_nocase(textures[i].name, "SKY1") == 0) {
+      renderer_set_sky_texture(generate_texture_cubemap(&textures[i]));
+    }
+
     wall_textures_info[i] =
         (wall_tex_info_t){textures[i].width, textures[i].height};
   }
@@ -200,6 +204,7 @@ void engine_render() {
 
   renderer_set_palette_index(palette_index);
   render_node(root_draw_node);
+  renderer_draw_sky();
 }
 
 void render_node(draw_node_t *node) {
