@@ -22,8 +22,14 @@ typedef struct vertex {
   vec2_t max_coords;
 } vertex_t;
 
-void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,
-                 size_t num_indices, uint32_t *indices);
+typedef enum vertex_layout {
+  VERTEX_LAYOUT_PLAIN,
+  VERTEX_LAYOUT_FULL,
+} vertex_layout_t;
+
+void mesh_create(mesh_t *mesh, vertex_layout_t vertex_layout,
+                 size_t num_vertices, const void *vertices, size_t num_indices,
+                 const uint32_t *indices);
 
 typedef dynarray(vertex_t) vertexarray_t;
 typedef dynarray(uint32_t) indexarray_t;

@@ -1,9 +1,12 @@
 #include "mesh.h"
+#include "vector.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
-void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,
-                 size_t num_indices, uint32_t *indices) {
+void mesh_create(mesh_t *mesh, vertex_layout_t vertex_layout,
+                 size_t num_vertices, const void *vertices, size_t num_indices,
+                 const uint32_t *indices) {
   mesh->num_indices = num_indices;
 
   glGenVertexArrays(1, &mesh->vao);
@@ -12,32 +15,45 @@ void mesh_create(mesh_t *mesh, size_t num_vertices, vertex_t *vertices,
 
   glBindVertexArray(mesh->vao);
   glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_t) * num_vertices, vertices,
-               GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        (void *)offsetof(vertex_t, position));
-  glEnableVertexAttribArray(0);
+  switch (vertex_layout) {
+  case VERTEX_LAYOUT_PLAIN:
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3_t) * num_vertices, vertices,
+                 GL_STATIC_DRAW);
 
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        (void *)offsetof(vertex_t, tex_coords));
-  glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3_t), (void *)0);
+    glEnableVertexAttribArray(0);
+    break;
+  case VERTEX_LAYOUT_FULL:
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_t) * num_vertices, vertices,
+                 GL_STATIC_DRAW);
 
-  glVertexAttribIPointer(2, 1, GL_INT, sizeof(vertex_t),
-                         (void *)offsetof(vertex_t, texture_index));
-  glEnableVertexAttribArray(2);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                          (void *)offsetof(vertex_t, position));
+    glEnableVertexAttribArray(0);
 
-  glVertexAttribIPointer(3, 1, GL_INT, sizeof(vertex_t),
-                         (void *)offsetof(vertex_t, texture_type));
-  glEnableVertexAttribArray(3);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                          (void *)offsetof(vertex_t, tex_coords));
+    glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        (void *)offsetof(vertex_t, light));
-  glEnableVertexAttribArray(4);
+    glVertexAttribIPointer(2, 1, GL_INT, sizeof(vertex_t),
+                           (void *)offsetof(vertex_t, texture_index));
+    glEnableVertexAttribArray(2);
 
-  glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        (void *)offsetof(vertex_t, max_coords));
-  glEnableVertexAttribArray(5);
+    glVertexAttribIPointer(3, 1, GL_INT, sizeof(vertex_t),
+                           (void *)offsetof(vertex_t, texture_type));
+    glEnableVertexAttribArray(3);
+
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                          (void *)offsetof(vertex_t, light));
+    glEnableVertexAttribArray(4);
+
+    glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                          (void *)offsetof(vertex_t, max_coords));
+    glEnableVertexAttribArray(5);
+
+    break;
+  }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * num_indices, indices,

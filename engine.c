@@ -208,7 +208,10 @@ void engine_render() {
 }
 
 void render_node(draw_node_t *node) {
-  if (node->mesh) { renderer_draw_mesh(node->mesh, mat4_identity()); }
+  if (node->mesh) {
+    renderer_draw_mesh(node->mesh, SHADER_DEFAULT, mat4_identity());
+  }
+
   if (node->front) { render_node(node->front); }
   if (node->back) { render_node(node->back); }
 }
@@ -505,8 +508,8 @@ void generate_node(draw_node_t **draw_node_ptr, size_t id, const map_t *map,
     free(ceil_vertices);
 
     draw_node->mesh = malloc(sizeof(mesh_t));
-    mesh_create(draw_node->mesh, vertices.count, vertices.data, indices.count,
-                indices.data);
+    mesh_create(draw_node->mesh, VERTEX_LAYOUT_FULL, vertices.count,
+                vertices.data, indices.count, indices.data);
     dynarray_free(vertices);
     dynarray_free(indices);
   } else {
