@@ -87,9 +87,8 @@ const char *sky_vert_src =
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "void main() {\n"
-    "  vec4 position = projection * mat4(mat3(view)) * vec4(pos, 1.0);\n"
+    "  gl_Position = projection * mat4(mat3(view)) * vec4(pos, 1.0);\n"
     "  TexCoords = pos;\n"
-    "  gl_Position = position.xyww;\n"
     "}\n";
 
 const char *sky_frag_src =
@@ -118,14 +117,20 @@ void renderer_init(int w, int h) {
   height = h;
 
   glClearColor(.1f, .1f, .1f, 1.f);
+  glEnable(GL_STENCIL_TEST);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
+
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+  glStencilFunc(GL_ALWAYS, 1, 0xff);
 
   init_skybox();
   init_shaders();
 }
 
-void renderer_clear() { glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
+void renderer_clear() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
 
 void renderer_set_view(mat4_t view) {
   for (int i = 0; i < NUM_SHADERS; i++) {
@@ -188,21 +193,24 @@ void renderer_draw_mesh(const mesh_t *mesh, int shader, mat4_t transformation) {
 }
 
 void renderer_draw_sky() {
-  glDepthFunc(GL_LEQUAL);
+  glStencilFunc(GL_EQUAL, 1, 0xff);
+  glStencilMask(0x00);
   glDisable(GL_CULL_FACE);
   glUseProgram(shaders[SHADER_SKY].id);
   glBindVertexArray(skybox_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
-  glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);
+  glStencilMask(0xff);
+  glStencilFunc(GL_ALWAYS, 1, 0xff);
 }
 
 void init_shaders() {
   struct {
     const char *vert, *frag;
   } shader_units[NUM_SHADERS] = {
-      [SHADER_DEFAULT] = {vert_src,     frag_src    },
-      [SHADER_SKY]     = {sky_vert_src, sky_frag_src},
+      [SHADER_DEFAULT] = {vert_src,       frag_src      },
+      [SHADER_SKY]     = {sky_vert_src,   sky_frag_src  },
+      [SHADER_PLAIN]   = {plain_vert_src, plain_frag_src},
   };
 
   for (int i = 0; i < NUM_SHADERS; i++) {

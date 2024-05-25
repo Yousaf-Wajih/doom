@@ -18,7 +18,7 @@ void renderer_set_view(mat4_t view);
 
 vec2_t renderer_get_size();
 
-enum { SHADER_DEFAULT, SHADER_SKY, NUM_SHADERS };
+enum { SHADER_DEFAULT, SHADER_SKY, SHADER_PLAIN, NUM_SHADERS };
 
 void renderer_draw_mesh(const mesh_t *mesh, int shader, mat4_t transformation);
 void renderer_draw_sky();
