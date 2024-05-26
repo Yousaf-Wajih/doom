@@ -4,13 +4,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/camera.o",
-      "camera.c"
+      "src/camera.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/camera.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/camera.c",
     "output": "/home/wajih/youtube-tuts/doom/build/camera.o"
   },
   {
@@ -18,27 +19,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
-      "-c",
-      "-o",
-      "build/engine.o",
-      "engine.c"
-    ],
-    "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/engine.c",
-    "output": "/home/wajih/youtube-tuts/doom/build/engine.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-O0",
-      "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/flat_texture.o",
-      "flat_texture.c"
+      "src/flat_texture.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/flat_texture.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/flat_texture.c",
     "output": "/home/wajih/youtube-tuts/doom/build/flat_texture.o"
   },
   {
@@ -46,13 +34,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/gl_helpers.o",
-      "gl_helpers.c"
+      "src/gl_helpers.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/gl_helpers.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/gl_helpers.c",
     "output": "/home/wajih/youtube-tuts/doom/build/gl_helpers.o"
   },
   {
@@ -60,13 +49,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/input.o",
-      "input.c"
+      "src/input.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/input.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/input.c",
     "output": "/home/wajih/youtube-tuts/doom/build/input.o"
   },
   {
@@ -74,13 +64,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/main.o",
-      "main.c"
+      "src/main.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/main.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/main.c",
     "output": "/home/wajih/youtube-tuts/doom/build/main.o"
   },
   {
@@ -88,13 +79,29 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
+      "-c",
+      "-o",
+      "build/map.o",
+      "src/map.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/src/map.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/map.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/matrix.o",
-      "matrix.c"
+      "src/matrix.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/matrix.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/matrix.c",
     "output": "/home/wajih/youtube-tuts/doom/build/matrix.o"
   },
   {
@@ -102,13 +109,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/mesh.o",
-      "mesh.c"
+      "src/mesh.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/mesh.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/mesh.c",
     "output": "/home/wajih/youtube-tuts/doom/build/mesh.o"
   },
   {
@@ -116,13 +124,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/palette.o",
-      "palette.c"
+      "src/palette.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/palette.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/palette.c",
     "output": "/home/wajih/youtube-tuts/doom/build/palette.o"
   },
   {
@@ -130,13 +139,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/renderer.o",
-      "renderer.c"
+      "src/renderer.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/renderer.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/renderer.c",
     "output": "/home/wajih/youtube-tuts/doom/build/renderer.o"
   },
   {
@@ -144,13 +154,14 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/vector.o",
-      "vector.c"
+      "src/vector.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/vector.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/vector.c",
     "output": "/home/wajih/youtube-tuts/doom/build/vector.o"
   },
   {
@@ -158,13 +169,74 @@
       "/usr/bin/clang",
       "-O0",
       "-g",
+      "-Iinc/",
       "-c",
       "-o",
       "build/wad.o",
-      "wad.c"
+      "src/wad.c"
     ],
     "directory": "/home/wajih/youtube-tuts/doom",
-    "file": "/home/wajih/youtube-tuts/doom/wad.c",
+    "file": "/home/wajih/youtube-tuts/doom/src/wad.c",
     "output": "/home/wajih/youtube-tuts/doom/build/wad.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-Iinc/",
+      "-c",
+      "-o",
+      "build/wall_texture.o",
+      "src/wall_texture.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/src/wall_texture.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/wall_texture.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-Iinc/",
+      "-c",
+      "-o",
+      "build/engine/engine.o",
+      "src/engine/engine.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/src/engine/engine.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/engine/engine.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-Iinc/",
+      "-c",
+      "-o",
+      "build/engine/meshgen.o",
+      "src/engine/meshgen.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/src/engine/meshgen.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/engine/meshgen.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-O0",
+      "-g",
+      "-Iinc/",
+      "-c",
+      "-o",
+      "build/engine/state.o",
+      "src/engine/state.c"
+    ],
+    "directory": "/home/wajih/youtube-tuts/doom",
+    "file": "/home/wajih/youtube-tuts/doom/src/engine/state.c",
+    "output": "/home/wajih/youtube-tuts/doom/build/engine/state.o"
   }
 ]

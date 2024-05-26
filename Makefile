@@ -1,12 +1,12 @@
 CC = clang
-C_FLAGS = -O0 -g -MMD -MP
+C_FLAGS = -O0 -g -MMD -MP -Iinc/
 L_FLAGS = -lm -lglfw -lGL -lGLEW
 
 BIN = doom
 BUILD_DIR = ./build
 
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
+SRCS = $(wildcard src/*.c) $(wildcard src/engine/*.c)
+OBJS = $(SRCS:src/%.c=$(BUILD_DIR)/%.o)
 DEPS = $(OBJS:%.o=%.d)
 
 ARGS = 
@@ -21,8 +21,9 @@ $(BIN): $(OBJS)
 
 -include $(DEPS)
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/%.o: src/%.c
 	mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)/engine
 	$(CC) $(C_FLAGS) -c $< -o $@
 
 clean:
