@@ -114,6 +114,7 @@ flat_tex_t *wad_read_flats(size_t *num, const wad_t *wad) {
       continue;
     }
 
+    memcpy(flats[i - f_start - 1].name, wad->lumps[i].name, 8);
     memcpy(flats[i - f_start - 1].data, wad->lumps[i].data,
            FLAT_TEXTURE_SIZE * FLAT_TEXTURE_SIZE);
   }

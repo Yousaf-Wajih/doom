@@ -24,6 +24,11 @@ typedef struct wall_tex_info {
   int width, height;
 } wall_tex_info_t;
 
+typedef struct tex_anim_def {
+  const char *end_name, *start_name;
+  int         start, end;
+} tex_anim_def_t;
+
 extern size_t           num_flats, num_wall_textures, num_palettes;
 extern wall_tex_info_t *wall_textures_info;
 extern vec2_t          *wall_max_coords;
@@ -36,5 +41,8 @@ extern int      sky_flat;
 
 extern draw_node_t   *root_draw_node;
 extern stencil_list_t stencil_list;
+
+extern tex_anim_def_t tex_anim_defs[];
+extern size_t         num_tex_anim_defs;
 
 #endif

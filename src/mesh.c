@@ -1,12 +1,13 @@
 #include "mesh.h"
 #include "vector.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 void mesh_create(mesh_t *mesh, vertex_layout_t vertex_layout,
                  size_t num_vertices, const void *vertices, size_t num_indices,
-                 const uint32_t *indices) {
+                 const uint32_t *indices, bool is_dynamic) {
   mesh->num_indices = num_indices;
 
   glGenVertexArrays(1, &mesh->vao);
@@ -19,14 +20,14 @@ void mesh_create(mesh_t *mesh, vertex_layout_t vertex_layout,
   switch (vertex_layout) {
   case VERTEX_LAYOUT_PLAIN:
     glBufferData(GL_ARRAY_BUFFER, sizeof(vec3_t) * num_vertices, vertices,
-                 GL_STATIC_DRAW);
+                 is_dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3_t), (void *)0);
     glEnableVertexAttribArray(0);
     break;
   case VERTEX_LAYOUT_FULL:
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_t) * num_vertices, vertices,
-                 GL_STATIC_DRAW);
+                 is_dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
                           (void *)offsetof(vertex_t, position));

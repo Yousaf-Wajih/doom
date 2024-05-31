@@ -2,6 +2,7 @@
 #define _MESH_H
 
 #include <GL/glew.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -29,7 +30,7 @@ typedef enum vertex_layout {
 
 void mesh_create(mesh_t *mesh, vertex_layout_t vertex_layout,
                  size_t num_vertices, const void *vertices, size_t num_indices,
-                 const uint32_t *indices);
+                 const uint32_t *indices, bool is_dynamic);
 
 typedef dynarray(vertex_t) vertexarray_t;
 typedef dynarray(uint32_t) indexarray_t;
